@@ -502,11 +502,19 @@ export async function joinPoll(
   deviceToken: string,
   nickname?: string
 ): Promise<void> {
+  const cleanNickname = nickname?.trim() || '';
+  const participantData: Record<string, unknown> = {
+    id:        deviceToken,
+    pollId,
+    joinedAt:  Date.now(),
+    nickname:  cleanNickname,
+  };
+
   const participant: Participant = {
     id:        deviceToken,
     pollId,
     joinedAt:  Date.now(),
-    nickname:  nickname || undefined,
+    nickname:  cleanNickname || undefined,
   };
 
   const local = getLocalParticipants(pollId);
@@ -516,9 +524,9 @@ export async function joinPoll(
 
   try {
     const ref = doc(db, 'polls', pollId, 'participants', deviceToken);
-    await setDoc(ref, participant, { merge: true });
+    await setDoc(ref, participantData, { merge: true });
   } catch (err) {
-    console.debug('Firestore joinPoll notice:', err);
+    console.warn('Firestore joinPoll notice:', err);
   }
 }
 

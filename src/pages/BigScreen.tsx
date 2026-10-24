@@ -121,7 +121,7 @@ const BigScreen: React.FC = () => {
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, borderTop: '4px solid var(--bone)', background: 'var(--ink)', padding: '16px 48px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <span className="blink-dot" style={{ width: 14, height: 14 }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(28px, 3.5vw, 44px)', color: 'var(--toxic)', letterSpacing: '0.08em' }}>
-            {participants.length} JOINED
+            {Math.max(participants.length, votes.length)} JOINED
           </span>
         </div>
       </div>

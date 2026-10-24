@@ -92,7 +92,7 @@ const HostDashboard: React.FC = () => {
   }
 
   const voteCount = votes.length;
-  const joinCount = participants.length;
+  const joinCount = Math.max(participants.length, votes.length);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--void)', display: 'flex', flexDirection: 'column' }}>
