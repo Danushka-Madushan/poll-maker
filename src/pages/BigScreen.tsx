@@ -358,8 +358,8 @@ const BigScreen: React.FC = () => {
     const renderCryptMonolith = (badge: string, heightPct: string, roman: string, accentColor: string) => (
       <div
         style={{
-          flex: '1 1 280px',
-          maxWidth: 380,
+          flex: heightPct === '96%' ? '1 1 360px' : '1 1 300px',
+          maxWidth: heightPct === '96%' ? 480 : 380,
           height: heightPct,
           background: 'var(--ink)',
           border: `3px dashed ${accentColor}`,
@@ -423,15 +423,15 @@ const BigScreen: React.FC = () => {
           {headerControls}
         </div>
 
-        {/* Theatrical Monolith Podium Stage */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 'clamp(16px, 2.5vw, 40px)', padding: '16px 24px 16px', minHeight: 0, position: 'relative', zIndex: 2 }}>
+        {/* Theatrical Monolith Podium Stage (Symmetrical Wings & Elevated Center) */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 'clamp(16px, 2.5vw, 36px)', padding: '16px 28px 16px', minHeight: 0, position: 'relative', zIndex: 2 }}>
 
-          {/* 2nd Place Monolith (Left) */}
+          {/* 2nd Place Monolith (Left Wing - Equal in size to 3rd Place) */}
           {podiumCount >= 2 && (
             isSecondRevealed && opt2 && tally2 ? (
               <div
                 style={{
-                  flex: '1 1 290px',
+                  flex: '1 1 300px',
                   maxWidth: 380,
                   height: '82%',
                   display: 'flex',
@@ -454,10 +454,10 @@ const BigScreen: React.FC = () => {
                   <div style={{ background: 'var(--bone)', color: 'var(--void)', padding: '8px 12px', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 'clamp(13px, 1.5vw, 18px)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     🥈 2ND PLACE · RUNNER-UP
                   </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-around', padding: '12px 14px 14px', minHeight: 0 }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px 16px', minHeight: 0 }}>
                     {/* Chamfered Octagonal Portrait Frame */}
                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                      <div className="chamfer-frame" style={{ width: 'clamp(105px, 12vw, 160px)', aspectRatio: '1/1', border: '3px solid var(--bone)', background: 'var(--void)', boxShadow: '4px 4px 0 var(--bone)' }}>
+                      <div className="chamfer-frame" style={{ width: 'clamp(110px, 13vw, 165px)', aspectRatio: '1/1', border: '3px solid var(--bone)', background: 'var(--void)', boxShadow: '4px 4px 0 var(--bone)' }}>
                         <img
                           src={opt2.imageUrl}
                           alt={opt2.title}
@@ -465,13 +465,14 @@ const BigScreen: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div style={{ textAlign: 'center', marginTop: 8 }}>
-                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(18px, 2.2vw, 28px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
-                        {opt2.title}
-                      </h2>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', margin: '4px 0 0', textTransform: 'uppercase' }}>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px, 2.4vw, 30px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1.1, textAlign: 'center' }}>
+                      {opt2.title}
+                    </h2>
+                    {/* High-visibility Contestant Label Badge */}
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--void)', border: '2px solid var(--bone)', padding: '3px 12px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(11px, 1.2vw, 13px)', color: 'var(--bone)', letterSpacing: '0.1em', fontWeight: 700, textTransform: 'uppercase' }}>
                         CONTESTANT {opt2.label}
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -486,14 +487,14 @@ const BigScreen: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    padding: '8px 12px 12px',
+                    padding: '10px 14px 14px',
                   }}
                 >
                   <div className="hazard-stripes-bone" style={{ height: 8, width: '100%', marginBottom: 8 }} />
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 3.5vw, 42px)', color: 'var(--bone)', lineHeight: 0.9 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(30px, 3.8vw, 44px)', color: 'var(--bone)', lineHeight: 0.9 }}>
                     II
                   </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone)', letterSpacing: '0.12em', margin: '2px 0 6px', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone)', letterSpacing: '0.12em', margin: '2px 0 6px', textTransform: 'uppercase', fontWeight: 700 }}>
                     RUNNER-UP
                   </span>
                   <div style={{ background: 'var(--void)', border: '2px solid var(--bone)', padding: '4px 14px', width: '90%', textAlign: 'center' }}>
@@ -508,11 +509,11 @@ const BigScreen: React.FC = () => {
             )
           )}
 
-          {/* 1st Place Monolith (Center / Winner) */}
+          {/* 1st Place Monolith (Center / Winner - Elevated) */}
           {isFirstRevealed && opt1 && tally1 ? (
             <div
               style={{
-                flex: '1 1 350px',
+                flex: '1 1 360px',
                 maxWidth: 480,
                 height: '96%',
                 display: 'flex',
@@ -546,7 +547,7 @@ const BigScreen: React.FC = () => {
                   )}
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-around', padding: '14px 18px 16px', minHeight: 0 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '14px 18px', minHeight: 0 }}>
                   {/* Hero Chamfered Octagon Photo (Large) */}
                   <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 12 }}>
                     {result.winners.slice(0, 2).map((wId) => {
@@ -574,15 +575,17 @@ const BigScreen: React.FC = () => {
                     })}
                   </div>
 
-                  <div style={{ textAlign: 'center', marginTop: 10 }}>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3.2vw, 42px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
-                      {result.winners.length > 1
-                        ? result.winners.map((wId) => options.find((o) => o.id === wId)?.title).join(' & ')
-                        : opt1.title}
-                    </h2>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--pumpkin)', margin: '4px 0 0', fontWeight: 700, textTransform: 'uppercase' }}>
-                      {result.winners.length > 1 ? 'CO-WINNERS OF THE HAUNT' : `CONTESTANT ${opt1.label}`}
-                    </p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3.2vw, 42px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1.1, textAlign: 'center' }}>
+                    {result.winners.length > 1
+                      ? result.winners.map((wId) => options.find((o) => o.id === wId)?.title).join(' & ')
+                      : opt1.title}
+                  </h2>
+
+                  {/* High-visibility Winner Contestant Label Badge */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--void)', border: '2px solid var(--pumpkin)', padding: '3px 14px' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(12px, 1.3vw, 14px)', color: 'var(--pumpkin)', letterSpacing: '0.1em', fontWeight: 700, textTransform: 'uppercase' }}>
+                      {result.winners.length > 1 ? 'CO-WINNERS' : `CONTESTANT ${opt1.label}`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -597,7 +600,7 @@ const BigScreen: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  padding: '10px 14px 14px',
+                  padding: '12px 16px 16px',
                 }}
               >
                 <div className="hazard-stripes" style={{ height: 10, width: '100%', marginBottom: 8 }} />
@@ -618,14 +621,14 @@ const BigScreen: React.FC = () => {
             renderCryptMonolith('👑 1ST PLACE · WINNER', '96%', 'I', 'var(--pumpkin)')
           )}
 
-          {/* 3rd Place Monolith (Right) */}
+          {/* 3rd Place Monolith (Right Wing - Symmetrical to 2nd Place) */}
           {podiumCount >= 3 && (
             isThirdRevealed && opt3 && tally3 ? (
               <div
                 style={{
-                  flex: '1 1 270px',
-                  maxWidth: 350,
-                  height: '70%',
+                  flex: '1 1 300px',
+                  maxWidth: 380,
+                  height: '82%',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'flex-end',
@@ -643,13 +646,13 @@ const BigScreen: React.FC = () => {
                     overflow: 'hidden',
                   }}
                 >
-                  <div style={{ background: 'var(--ash)', color: 'var(--void)', padding: '7px 10px', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 'clamp(12px, 1.4vw, 16px)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div style={{ background: 'var(--ash)', color: 'var(--void)', padding: '8px 12px', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 'clamp(13px, 1.5vw, 18px)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     🥉 3RD PLACE
                   </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-around', padding: '10px 12px 12px', minHeight: 0 }}>
-                    {/* Chamfered Octagonal Portrait Frame */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px 16px', minHeight: 0 }}>
+                    {/* Chamfered Octagonal Portrait Frame (Identical scale to 2nd Place) */}
                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                      <div className="chamfer-frame" style={{ width: 'clamp(95px, 10vw, 145px)', aspectRatio: '1/1', border: '3px solid var(--ash)', background: 'var(--void)', boxShadow: '3px 3px 0 var(--ash)' }}>
+                      <div className="chamfer-frame" style={{ width: 'clamp(110px, 13vw, 165px)', aspectRatio: '1/1', border: '3px solid var(--ash)', background: 'var(--void)', boxShadow: '4px 4px 0 var(--ash)' }}>
                         <img
                           src={opt3.imageUrl}
                           alt={opt3.title}
@@ -657,18 +660,19 @@ const BigScreen: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div style={{ textAlign: 'center', marginTop: 6 }}>
-                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(16px, 1.8vw, 24px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
-                        {opt3.title}
-                      </h2>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: '3px 0 0', textTransform: 'uppercase' }}>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px, 2.4vw, 30px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1.1, textAlign: 'center' }}>
+                      {opt3.title}
+                    </h2>
+                    {/* High-visibility Contestant Label Badge */}
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--void)', border: '2px solid var(--ash)', padding: '3px 12px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(11px, 1.2vw, 13px)', color: 'var(--bone)', letterSpacing: '0.1em', fontWeight: 700, textTransform: 'uppercase' }}>
                         CONTESTANT {opt3.label}
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* 3rd Place Architectural Pedestal Base */}
+                {/* 3rd Place Architectural Pedestal Base (Identical proportions to 2nd Place) */}
                 <div
                   style={{
                     background: 'var(--ink)',
@@ -678,25 +682,25 @@ const BigScreen: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    padding: '6px 10px 10px',
+                    padding: '10px 14px 14px',
                   }}
                 >
-                  <div className="hazard-stripes" style={{ height: 6, width: '100%', marginBottom: 6 }} />
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 3vw, 36px)', color: 'var(--ash)', lineHeight: 0.9 }}>
+                  <div className="hazard-stripes" style={{ height: 8, width: '100%', marginBottom: 8 }} />
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(30px, 3.8vw, 44px)', color: 'var(--ash)', lineHeight: 0.9 }}>
                     III
                   </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ash)', letterSpacing: '0.12em', margin: '2px 0 6px', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', letterSpacing: '0.12em', margin: '2px 0 6px', textTransform: 'uppercase', fontWeight: 700 }}>
                     3RD PLACE
                   </span>
-                  <div style={{ background: 'var(--void)', border: '2px solid var(--ash)', padding: '3px 12px', width: '90%', textAlign: 'center' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(15px, 1.6vw, 20px)', color: 'var(--ash)', fontWeight: 900 }}>
+                  <div style={{ background: 'var(--void)', border: '2px solid var(--ash)', padding: '4px 14px', width: '90%', textAlign: 'center' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(16px, 1.8vw, 22px)', color: 'var(--ash)', fontWeight: 900 }}>
                       {tally3.count} VOTES ({tally3.percentage}%)
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              renderCryptMonolith('🥉 3RD PLACE', '70%', 'III', 'var(--ash)')
+              renderCryptMonolith('🥉 3RD PLACE', '82%', 'III', 'var(--ash)')
             )
           )}
         </div>
