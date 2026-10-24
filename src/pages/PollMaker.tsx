@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ImageUploader from '../components/ui/ImageUploader';
 import { useToast } from '../components/ui/ToastContext';
-import { createPoll } from '../firebase/pollService';
+import { createPoll, getPoll, updatePollDraft } from '../firebase/pollService';
 import type { DraftOption, DraftPoll, PollSettings } from '../types/poll';
 import { DEFAULT_SETTINGS } from '../types/poll';
 import { generateId, orderToLabel } from '../utils/code';
@@ -71,6 +71,11 @@ const PhonePreview: React.FC<{ draft: DraftPoll }> = ({ draft }) => (
 
 const PollMaker: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editPollId = searchParams.get('edit');
+  const editToken = searchParams.get('token');
+  const isEditing = Boolean(editPollId && editToken);
+
   const { addToast } = useToast();
   const [title, setTitle] = useState(() => loadDraft<DraftPoll>()?.title ?? '');
   const [subtitle, setSubtitle] = useState(() => loadDraft<DraftPoll>()?.subtitle ?? '');
@@ -82,15 +87,42 @@ const PollMaker: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const draftTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-save draft every 3 seconds
+  // Load existing poll for editing if in edit mode
   useEffect(() => {
+    if (!editPollId) return;
+    getPoll(editPollId).then((existing) => {
+      if (!existing) return;
+      if (existing.status !== 'lobby') {
+        addToast({ message: 'Poll has already started and cannot be edited.' });
+        return;
+      }
+      setTitle(existing.title);
+      setSubtitle(existing.subtitle || '');
+      setSettings(existing.settings);
+      if (existing.options && existing.options.length > 0) {
+        setOptions(
+          existing.options.map((o) => ({
+            id: o.id,
+            title: o.title,
+            imageDataUrl: o.imageUrl,
+            label: o.label,
+          }))
+        );
+      }
+    }).catch(console.error);
+  }, [editPollId, addToast]);
+
+  // Auto-save draft every 3 seconds (only when not in edit mode)
+  useEffect(() => {
+    if (isEditing) return;
     draftTimer.current = setInterval(() => {
       saveDraft({ title, subtitle, options, settings });
     }, 3000);
     return () => { if (draftTimer.current) clearInterval(draftTimer.current); };
-  }, [title, subtitle, options, settings]);
+  }, [title, subtitle, options, settings, isEditing]);
 
   const relabel = (opts: DraftOption[]) =>
     opts.map((o, i) => ({ ...o, order: i, label: orderToLabel(i) }));
@@ -138,6 +170,23 @@ const PollMaker: React.FC = () => {
     setOptions(relabel(next));
   };
 
+  const handleDragStart = (idx: number) => {
+    setDraggedIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetIdx: number) => {
+    if (draggedIdx === null || draggedIdx === targetIdx) return;
+    const next = [...options];
+    const [moved] = next.splice(draggedIdx, 1);
+    next.splice(targetIdx, 0, moved);
+    setOptions(relabel(next));
+    setDraggedIdx(null);
+  };
+
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Poll title is required.';
@@ -150,22 +199,33 @@ const PollMaker: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleCreate = async () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const { pollId, hostToken } = await createPoll({
-        title: title.trim(),
-        subtitle: subtitle.trim(),
-        settings,
-        options: options.map((o) => ({ title: o.title.trim(), imageUrl: o.imageDataUrl })),
-      });
-      saveRecentPoll({ pollId, hostToken, title: title.trim(), createdAt: Date.now() });
-      clearDraft();
-      navigate(`/host/${pollId}?token=${hostToken}`);
+      if (isEditing && editPollId && editToken) {
+        await updatePollDraft(editPollId, editToken, {
+          title: title.trim(),
+          subtitle: subtitle.trim(),
+          settings,
+          options: options.map((o) => ({ title: o.title.trim(), imageUrl: o.imageDataUrl })),
+        });
+        addToast({ message: 'Poll options updated!' });
+        navigate(`/host/${editPollId}?token=${editToken}`);
+      } else {
+        const { pollId, hostToken } = await createPoll({
+          title: title.trim(),
+          subtitle: subtitle.trim(),
+          settings,
+          options: options.map((o) => ({ title: o.title.trim(), imageUrl: o.imageDataUrl })),
+        });
+        saveRecentPoll({ pollId, hostToken, title: title.trim(), createdAt: Date.now() });
+        clearDraft();
+        navigate(`/host/${pollId}?token=${hostToken}`);
+      }
     } catch (err) {
-      console.error('Create poll error:', err);
-      addToast({ message: 'Failed to create poll. Check your connection and try again.' });
+      console.error('Save/Create poll error:', err);
+      addToast({ message: `Failed: ${(err as Error).message}` });
     } finally {
       setSubmitting(false);
     }
@@ -223,10 +283,33 @@ const PollMaker: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               {options.map((opt, idx) => (
-                <div key={opt.id} style={{ border: `3px solid ${errors[`opt_${opt.id}`] || errors[`opt_img_${opt.id}`] ? 'var(--blood)' : 'var(--bone)'}`, background: 'var(--ink)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {/* Label */}
+                <div
+                  key={opt.id}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(idx)}
+                  style={{
+                    border: `3px solid ${errors[`opt_${opt.id}`] || errors[`opt_img_${opt.id}`] ? 'var(--blood)' : 'var(--bone)'}`,
+                    background: 'var(--ink)',
+                    padding: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    opacity: draggedIdx === idx ? 0.4 : 1,
+                  }}
+                >
+                  {/* Label & drag handle */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--pumpkin)' }}>OPTION {opt.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span
+                        style={{ cursor: 'grab', userSelect: 'none', fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--ash)' }}
+                        title="Drag to reorder"
+                      >
+                        ⋮⋮
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--pumpkin)' }}>OPTION {opt.label}</span>
+                    </div>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 12 }} onClick={() => moveOption(opt.id, -1)} disabled={idx === 0} aria-label="Move up">↑</button>
                       <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 12 }} onClick={() => moveOption(opt.id, 1)} disabled={idx === options.length - 1} aria-label="Move down">↓</button>
@@ -296,6 +379,23 @@ const PollMaker: React.FC = () => {
 
             {settingsOpen && (
               <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Votes per person selector */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Votes per person</label>
+                  <select
+                    className="input"
+                    value={settings.votesPerPerson || 1}
+                    onChange={(e) => setSettings((s) => ({ ...s, votesPerPerson: Number(e.target.value) }))}
+                    style={{ background: 'var(--void)', color: 'var(--bone)' }}
+                  >
+                    <option value={1}>1 vote per person (default)</option>
+                    <option value={2}>2 votes per person</option>
+                    <option value={3}>3 votes per person</option>
+                    <option value={4}>4 votes per person</option>
+                    <option value={5}>5 votes per person</option>
+                  </select>
+                </div>
+
                 {[
                   { key: 'allowChangeVote',          label: 'Allow changing vote until poll stops' },
                   { key: 'showLiveCountsHost',        label: 'Show live vote counts on host screen' },
@@ -336,10 +436,10 @@ const PollMaker: React.FC = () => {
             <button
               className="btn-primary"
               style={{ width: '100%', fontSize: 20, padding: '18px 24px' }}
-              onClick={handleCreate}
+              onClick={handleSubmit}
               disabled={submitting || options.length < MIN_OPTIONS}
             >
-              {submitting ? 'CREATING…' : '🎃 CREATE POLL'}
+              {submitting ? 'SAVING…' : isEditing ? '💾 SAVE CHANGES' : '🎃 CREATE POLL'}
             </button>
             {options.length < MIN_OPTIONS && (
               <p style={{ color: 'var(--ash)', fontFamily: 'var(--font-mono)', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
