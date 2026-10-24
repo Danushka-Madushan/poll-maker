@@ -16,6 +16,7 @@ import {
 } from '../firebase/pollService';
 import type { Poll, PollOption, Participant, Vote } from '../types/poll';
 import { isMuted, toggleMuted } from '../utils/audio';
+import { formatJoinCode } from '../utils/code';
 
 const HostDashboard: React.FC = () => {
   const { pollId } = useParams<{ pollId: string }>();
@@ -30,6 +31,7 @@ const HostDashboard: React.FC = () => {
   const [votes, setVotes]             = useState<Vote[]>([]);
   const [muted, setMuted]             = useState(isMuted());
   const [loading, setLoading]         = useState(true);
+  const [showParticipants, setShowParticipants] = useState(false);
 
   // Real-time subscriptions
   useEffect(() => {
@@ -131,7 +133,9 @@ const HostDashboard: React.FC = () => {
           {/* Join code */}
           <div>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: '0 0 4px', textTransform: 'uppercase' }}>Join code</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 32, color: 'var(--bone)', margin: 0, letterSpacing: '0.12em' }}>{poll.joinCode}</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 32, color: 'var(--bone)', margin: 0, letterSpacing: '0.12em' }}>
+              {formatJoinCode(poll.joinCode)}
+            </p>
           </div>
 
           {/* URL */}
@@ -154,6 +158,25 @@ const HostDashboard: React.FC = () => {
               {joinCount}
             </p>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: '4px 0 0' }}>JOINED</p>
+            {joinCount > 0 && (
+              <button
+                className="btn-ghost"
+                onClick={() => setShowParticipants((v) => !v)}
+                style={{ marginTop: 8, fontSize: 11, padding: '4px 8px', width: '100%', justifyContent: 'space-between' }}
+              >
+                <span>AUDIENCE LIST</span>
+                <span>{showParticipants ? '▲' : '▼'}</span>
+              </button>
+            )}
+            {showParticipants && (
+              <div style={{ marginTop: 8, maxHeight: 160, overflowY: 'auto', border: '2px solid var(--ash)', padding: 8, background: 'var(--ink)' }}>
+                {participants.map((p, idx) => (
+                  <div key={p.id || idx} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone)', padding: '3px 0', borderBottom: '1px solid rgba(244,238,223,0.1)' }}>
+                    {p.nickname ? `👻 ${p.nickname}` : `🎃 Guest #${idx + 1}`}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Activity strip */}
@@ -229,9 +252,18 @@ const HostDashboard: React.FC = () => {
           {/* Action bar */}
           <div style={{ borderTop: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'var(--ink)' }}>
             {poll.status === 'lobby' && (
-              <button className="btn-primary" style={{ fontSize: 18, padding: '14px 32px' }} onClick={() => changeStatus('live')}>
-                ► START POLL
-              </button>
+              <>
+                <button className="btn-primary" style={{ fontSize: 18, padding: '14px 32px' }} onClick={() => changeStatus('live')}>
+                  ► START POLL
+                </button>
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: 18, padding: '14px 24px' }}
+                  onClick={() => navigate(`/create?edit=${pollId}&token=${hostToken}`)}
+                >
+                  ✎ EDIT OPTIONS
+                </button>
+              </>
             )}
             {poll.status === 'live' && (
               <HoldButton

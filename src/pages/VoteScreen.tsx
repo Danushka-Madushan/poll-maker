@@ -76,13 +76,22 @@ const VoteScreen: React.FC = () => {
     );
   }, [options, poll?.settings.shuffleOptions, deviceToken]);
 
+  const maxVotes = poll?.settings.votesPerPerson ?? 1;
+
   const toggleSelect = (optId: string) => {
     if (myVote && !poll?.settings.allowChangeVote) return;
     playTap();
     setSelected((prev) => {
-      const maxVotes = poll?.settings.votesPerPerson ?? 1;
-      if (prev.includes(optId)) return prev.filter((id) => id !== optId);
-      if (prev.length >= maxVotes) return [optId]; // replace if single-vote
+      if (prev.includes(optId)) {
+        return prev.filter((id) => id !== optId);
+      }
+      if (maxVotes === 1) {
+        return [optId];
+      }
+      if (prev.length >= maxVotes) {
+        addToast({ message: `You can only select up to ${maxVotes} options.` });
+        return prev;
+      }
       return [...prev, optId];
     });
   };
@@ -138,7 +147,7 @@ const VoteScreen: React.FC = () => {
 
   /* ---- VOTED CONFIRMATION ---- */
   if (myVote && poll?.status === 'live') {
-    const votedOption = options.find((o) => myVote.optionIds.includes(o.id));
+    const votedOptions = options.filter((o) => myVote.optionIds.includes(o.id));
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--void)' }}>
         {/* Sticky top bar */}
@@ -148,22 +157,26 @@ const VoteScreen: React.FC = () => {
         </div>
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, padding: 24 }}>
-          <div style={{ border: '4px solid var(--pumpkin)', background: 'var(--ink)', padding: 32, textAlign: 'center', maxWidth: 360, width: '100%', boxShadow: '8px 8px 0 var(--pumpkin)' }}>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--pumpkin)', marginBottom: 16, letterSpacing: '0.08em' }}>
-              VOTE LOCKED IN.<br />NO TAKE-BACKS.
+          <div style={{ border: '4px solid var(--pumpkin)', background: 'var(--ink)', padding: 32, textAlign: 'center', maxWidth: 420, width: '100%', boxShadow: '8px 8px 0 var(--pumpkin)' }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--pumpkin)', marginBottom: 16, letterSpacing: '0.08em', whiteSpace: 'pre-line' }}>
+              {poll.settings.allowChangeVote
+                ? 'VOTE LOCKED IN.\n(CHANGE ALLOWED UNTIL POLL CLOSES)'
+                : 'VOTE LOCKED IN.\nNO TAKE-BACKS.'}
             </p>
-            {votedOption && (
-              <div style={{ border: '3px solid var(--bone)', marginBottom: 16, overflow: 'hidden' }}>
-                <img src={votedOption.imageUrl} alt={votedOption.title} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />
-                <div style={{ padding: '8px 12px', borderTop: '2px solid var(--bone)', fontFamily: 'var(--font-display)', fontSize: 18, textTransform: 'uppercase' }}>
-                  {votedOption.label} — {votedOption.title}
+            <div style={{ display: 'grid', gridTemplateColumns: votedOptions.length > 1 ? 'repeat(2, 1fr)' : '1fr', gap: 12, marginBottom: 16 }}>
+              {votedOptions.map((opt) => (
+                <div key={opt.id} style={{ border: '3px solid var(--bone)', overflow: 'hidden' }}>
+                  <img src={opt.imageUrl} alt={opt.title} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />
+                  <div style={{ padding: '8px 12px', borderTop: '2px solid var(--bone)', fontFamily: 'var(--font-display)', fontSize: 14, textTransform: 'uppercase' }}>
+                    {opt.label} — {opt.title}
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
             {poll.settings.allowChangeVote && (
               <button
                 className="btn-ghost"
-                onClick={() => { setMyVote(null); setSelected([]); }}
+                onClick={() => { setMyVote(null); setSelected(myVote.optionIds); }}
                 style={{ width: '100%' }}
               >
                 CHANGE VOTE
@@ -176,7 +189,6 @@ const VoteScreen: React.FC = () => {
   }
 
   /* ---- VOTING STATE ---- */
-  const maxVotes = poll?.settings.votesPerPerson ?? 1;
   const remaining = maxVotes - selected.length;
 
   return (
