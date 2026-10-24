@@ -11,17 +11,20 @@ import {
   subscribeToParticipants,
   subscribeToVotes,
   updatePollStatus,
+  purgePoll,
   computeResults,
   exportResultsCSV,
 } from '../firebase/pollService';
 import type { Poll, PollOption, Participant, Vote } from '../types/poll';
 import { isMuted, toggleMuted } from '../utils/audio';
 import { formatJoinCode } from '../utils/code';
+import { getRecentPolls } from '../utils/device';
 
 const HostDashboard: React.FC = () => {
   const { pollId } = useParams<{ pollId: string }>();
   const [searchParams] = useSearchParams();
-  const hostToken = searchParams.get('token') ?? '';
+  const queryToken = searchParams.get('token') ?? '';
+  const hostToken = queryToken || (pollId ? (getRecentPolls().find((p) => p.pollId === pollId)?.hostToken ?? '') : '');
   const navigate = useNavigate();
   const { addToast } = useToast();
 
@@ -36,12 +39,20 @@ const HostDashboard: React.FC = () => {
   // Real-time subscriptions
   useEffect(() => {
     if (!pollId) return;
-    const unsub1 = subscribeToPoll(pollId, (p) => { setPoll(p); setLoading(false); });
+    const unsub1 = subscribeToPoll(
+      pollId,
+      (p) => { setPoll(p); setLoading(false); },
+      undefined,
+      () => {
+        addToast({ message: 'This poll was purged.' });
+        navigate('/');
+      }
+    );
     const unsub2 = subscribeToOptions(pollId, setOptions);
     const unsub3 = subscribeToParticipants(pollId, setParticipants);
     const unsub4 = subscribeToVotes(pollId, setVotes);
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
-  }, [pollId]);
+  }, [pollId, navigate, addToast]);
 
   // Compute results when votes change
   const result = useMemo(() => {
@@ -50,13 +61,32 @@ const HostDashboard: React.FC = () => {
   }, [votes, options, participants.length]);
 
   const changeStatus = useCallback(async (status: Poll['status']) => {
-    if (!pollId || !hostToken) return;
+    if (!pollId) return;
+    const token = hostToken || poll?.hostToken || '';
+    // Optimistically update poll state so button and badges change immediately
+    setPoll((prev) => (prev ? { ...prev, status } : null));
     try {
-      await updatePollStatus(pollId, hostToken, status);
+      await updatePollStatus(pollId, token, status);
+      addToast({ message: `Poll is now ${status.toUpperCase()}!` });
     } catch (err) {
       addToast({ message: `Failed to update status: ${(err as Error).message}` });
     }
-  }, [pollId, hostToken, addToast]);
+  }, [pollId, hostToken, poll?.hostToken, addToast]);
+
+  const handlePurge = async () => {
+    if (!pollId) return;
+    const confirmed = window.confirm(
+      'ARE YOU ABSOLUTELY SURE?\n\nThis will permanently purge this poll, all options, and all cast votes from Firestore and your device. This cannot be undone.'
+    );
+    if (!confirmed) return;
+    try {
+      await purgePoll(pollId, hostToken);
+      addToast({ message: 'Poll permanently purged from existence.' });
+      navigate('/');
+    } catch (err) {
+      addToast({ message: `Failed to purge poll: ${(err as Error).message}` });
+    }
+  };
 
   const openBigScreen = () => {
     if (pollId) window.open(`/display/${pollId}`, '_blank', 'noopener');
@@ -253,9 +283,13 @@ const HostDashboard: React.FC = () => {
           <div style={{ borderTop: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'var(--ink)' }}>
             {poll.status === 'lobby' && (
               <>
-                <button className="btn-primary" style={{ fontSize: 18, padding: '14px 32px' }} onClick={() => changeStatus('live')}>
-                  ► START POLL
-                </button>
+                <HoldButton
+                  label="► PUSH & HOLD TO START"
+                  holdingLabel="STARTING HAUNT…"
+                  onConfirm={() => changeStatus('live')}
+                  className="btn-hold-primary"
+                  style={{ fontSize: 18, padding: '14px 32px' } as React.CSSProperties}
+                />
                 <button
                   className="btn-secondary"
                   style={{ fontSize: 18, padding: '14px 24px' }}
@@ -267,20 +301,20 @@ const HostDashboard: React.FC = () => {
             )}
             {poll.status === 'live' && (
               <HoldButton
-                label="■ STOP POLL"
-                holdingLabel="KEEP HOLDING…"
+                label="■ PUSH & HOLD TO END"
+                holdingLabel="STOPPING POLL…"
                 onConfirm={() => changeStatus('closed')}
-                className="btn-danger"
+                className="btn-hold-danger"
                 style={{ fontSize: 18, padding: '14px 32px' } as React.CSSProperties}
               />
             )}
             {poll.status === 'closed' && (
               <>
                 <HoldButton
-                  label="▶ SHOW RESULT"
-                  holdingLabel="REVEALING…"
+                  label="▶ PUSH & HOLD TO REVEAL"
+                  holdingLabel="REVEALING RESULTS…"
                   onConfirm={() => changeStatus('revealed')}
-                  className="btn-primary"
+                  className="btn-hold-primary"
                   style={{ fontSize: 18, padding: '14px 32px' } as React.CSSProperties}
                 />
                 <button className="btn-secondary" onClick={() => changeStatus('live')}>
@@ -299,6 +333,14 @@ const HostDashboard: React.FC = () => {
                 )}
               </>
             )}
+            <button
+              className="btn-ghost"
+              onClick={handlePurge}
+              style={{ marginLeft: 'auto', borderColor: 'var(--blood)', color: 'var(--blood)', fontSize: 13, padding: '8px 16px' }}
+              title="Permanently delete this poll from existence"
+            >
+              💀 PURGE POLL
+            </button>
           </div>
         </div>
       </div>

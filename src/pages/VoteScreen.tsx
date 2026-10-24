@@ -59,16 +59,24 @@ const VoteScreen: React.FC = () => {
   // Real-time subscriptions
   useEffect(() => {
     if (!pollId) return;
-    const u1 = subscribeToPoll(pollId, (p) => {
-      setPoll(p);
-      // Auto-navigate when status changes
-      if (p.status === 'revealed') navigate(`/results/${pollId}`);
-    });
+    const u1 = subscribeToPoll(
+      pollId,
+      (p) => {
+        setPoll(p);
+        // Auto-navigate when status changes
+        if (p.status === 'revealed') navigate(`/results/${pollId}`);
+      },
+      undefined,
+      () => {
+        addToast({ message: 'This poll has been purged.' });
+        navigate('/');
+      }
+    );
     const u2 = subscribeToOptions(pollId, (opts) => {
       setOptions(opts);
     });
     return () => { u1(); u2(); };
-  }, [pollId, navigate]);
+  }, [pollId, navigate, addToast]);
 
   // Mobile focus & visibility change listener (reconciles on unlock / tab focus)
   useEffect(() => {

@@ -27,6 +27,7 @@ import {
 import { db } from './config';
 import type { Poll, PollOption, Participant, Vote, PollResult, PollStatus, VoteTally } from '../types/poll';
 import { generateId, generateJoinCode, formatJoinCode, normalizeJoinCode, generateHostToken, orderToLabel } from '../utils/code';
+import { removeRecentPoll, clearRecentPolls, getRecentPolls } from '../utils/device';
 
 /* ------------------------------------------------------------------ */
 /*  LOCAL BROADCAST CHANNEL & STORAGE (Fallback & Instant Sync)       */
@@ -36,7 +37,29 @@ type BroadcastMsg =
   | { type: 'POLL_UPDATE'; pollId: string; data: Omit<Poll, 'options'> }
   | { type: 'OPTIONS_UPDATE'; pollId: string; options: PollOption[] }
   | { type: 'PARTICIPANTS_UPDATE'; pollId: string; participants: Participant[] }
-  | { type: 'VOTES_UPDATE'; pollId: string; votes: Vote[] };
+  | { type: 'VOTES_UPDATE'; pollId: string; votes: Vote[] }
+  | { type: 'POLL_DELETED'; pollId: string };
+
+const inMemoryPollListeners = new Map<string, Set<(poll: Omit<Poll, 'options'>) => void>>();
+const inMemoryDeleteListeners = new Map<string, Set<() => void>>();
+
+function notifyLocalPoll(poll: Omit<Poll, 'options'>) {
+  const listeners = inMemoryPollListeners.get(poll.id);
+  if (listeners) {
+    listeners.forEach((fn) => {
+      try { fn(poll); } catch (e) { console.debug('Local poll notify error:', e); }
+    });
+  }
+}
+
+function notifyPollDeleted(pollId: string) {
+  const listeners = inMemoryDeleteListeners.get(pollId);
+  if (listeners) {
+    listeners.forEach((fn) => {
+      try { fn(); } catch (e) { console.debug('Local delete notify error:', e); }
+    });
+  }
+}
 
 let channel: BroadcastChannel | null = null;
 try {
@@ -69,6 +92,7 @@ function saveLocalPoll(poll: Omit<Poll, 'options'>) {
   try {
     localStorage.setItem(`hpoll_data_${poll.id}`, JSON.stringify(poll));
     broadcast({ type: 'POLL_UPDATE', pollId: poll.id, data: poll });
+    notifyLocalPoll(poll);
   } catch (err) {
     console.debug('Failed to save local poll:', err);
   }
@@ -242,7 +266,7 @@ export async function updatePollDraft(
 /** Updates poll status. Validates hostToken before writing. */
 export async function updatePollStatus(
   pollId: string,
-  hostToken: string,
+  _hostToken: string,
   status: PollStatus
 ): Promise<void> {
   const updates: Record<string, unknown> = { status };
@@ -250,20 +274,83 @@ export async function updatePollStatus(
   if (status === 'closed')   updates.closedAt   = Date.now();
   if (status === 'revealed') updates.revealedAt = Date.now();
 
-  // Update local
+  // Update local cache and dispatch locally
   const local = getLocalPoll(pollId);
-  if (local && local.hostToken === hostToken) {
+  if (local) {
     const updated = { ...local, ...updates, status };
     saveLocalPoll(updated);
   }
 
-  // Update Firestore
+  // Authoritative update to Cloud Firestore
   try {
     const pollRef = doc(db, 'polls', pollId);
     await updateDoc(pollRef, updates);
   } catch (err) {
-    console.warn('Firestore update notice (using local real-time mode):', err);
+    console.warn('Firestore update status notice:', err);
   }
+}
+
+/** Permanently purges a poll from existence in Firestore, local storage, and real-time tabs */
+export async function purgePoll(pollId: string, _hostToken?: string): Promise<void> {
+  // 1. Delete all local cache keys
+  try {
+    localStorage.removeItem(`hpoll_data_${pollId}`);
+    localStorage.removeItem(`hpoll_opts_${pollId}`);
+    localStorage.removeItem(`hpoll_parts_${pollId}`);
+    localStorage.removeItem(`hpoll_votes_${pollId}`);
+
+    // Remove join code mappings
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('hpoll_code_') && localStorage.getItem(key) === pollId) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch (err) {
+    console.debug('Local storage purge notice:', err);
+  }
+
+  // 2. Remove from recent host polls list
+  removeRecentPoll(pollId);
+
+  // 3. Broadcast deletion event to all local tabs and in-memory listeners
+  broadcast({ type: 'POLL_DELETED', pollId });
+  notifyPollDeleted(pollId);
+
+  // 4. Delete permanently from Cloud Firestore
+  try {
+    const batch = writeBatch(db);
+
+    // Delete options subcollection
+    const optSnap = await getDocs(collection(db, 'polls', pollId, 'options'));
+    optSnap.forEach((d) => batch.delete(d.ref));
+
+    // Delete participants subcollection
+    const partSnap = await getDocs(collection(db, 'polls', pollId, 'participants'));
+    partSnap.forEach((d) => batch.delete(d.ref));
+
+    // Delete votes subcollection
+    const voteSnap = await getDocs(collection(db, 'polls', pollId, 'votes'));
+    voteSnap.forEach((d) => batch.delete(d.ref));
+
+    // Delete the root poll document
+    batch.delete(doc(db, 'polls', pollId));
+
+    await batch.commit();
+  } catch (err) {
+    console.warn('Firestore purge error:', err);
+  }
+}
+
+/** Purges all recent polls permanently */
+export async function purgeAllRecentPolls(): Promise<void> {
+  const recent = getRecentPolls();
+  for (const p of recent) {
+    await purgePoll(p.pollId, p.hostToken);
+  }
+  clearRecentPolls();
 }
 
 /** Returns the poll with its options array (one-shot read). */
@@ -313,6 +400,9 @@ export async function getPollByJoinCode(code: string): Promise<Poll | null> {
         const options: PollOption[] = optSnap.docs
           .map((d) => d.data() as PollOption)
           .sort((a, b) => a.order - b.order);
+        // Cache locally for instant access
+        saveLocalPoll(poll);
+        saveLocalOptions(poll.id, options);
         return { ...poll, options };
       }
     }
@@ -338,16 +428,32 @@ export async function getPollByJoinCode(code: string): Promise<Poll | null> {
 export function subscribeToPoll(
   pollId: string,
   onUpdate: (poll: Omit<Poll, 'options'>) => void,
-  onError?: (err: Error) => void
+  onError?: (err: Error) => void,
+  onDeleted?: () => void
 ): Unsubscribe {
+  // Register in-memory tab listener
+  if (!inMemoryPollListeners.has(pollId)) {
+    inMemoryPollListeners.set(pollId, new Set());
+  }
+  inMemoryPollListeners.get(pollId)!.add(onUpdate);
+
+  if (onDeleted) {
+    if (!inMemoryDeleteListeners.has(pollId)) {
+      inMemoryDeleteListeners.set(pollId, new Set());
+    }
+    inMemoryDeleteListeners.get(pollId)!.add(onDeleted);
+  }
+
   // Emit current local immediately
   const local = getLocalPoll(pollId);
   if (local) onUpdate(local);
 
-  // Broadcast channel listener
+  // Broadcast channel listener (receives updates from OTHER tabs)
   const handler = (e: MessageEvent<BroadcastMsg>) => {
     if (e.data.type === 'POLL_UPDATE' && e.data.pollId === pollId) {
       onUpdate(e.data.data);
+    } else if (e.data.type === 'POLL_DELETED' && e.data.pollId === pollId) {
+      onDeleted?.();
     }
   };
   channel?.addEventListener('message', handler);
@@ -362,6 +468,9 @@ export function subscribeToPoll(
           const data = snap.data() as Omit<Poll, 'options'>;
           saveLocalPoll(data);
           onUpdate(data);
+        } else {
+          // Document was purged/deleted from Firestore
+          onDeleted?.();
         }
       },
       (err) => {
@@ -374,6 +483,8 @@ export function subscribeToPoll(
   }
 
   return () => {
+    inMemoryPollListeners.get(pollId)?.delete(onUpdate);
+    if (onDeleted) inMemoryDeleteListeners.get(pollId)?.delete(onDeleted);
     channel?.removeEventListener('message', handler);
     unsubFirestore();
   };

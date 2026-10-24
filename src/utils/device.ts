@@ -41,6 +41,24 @@ export function getRecentPolls(): RecentPoll[] {
   }
 }
 
+export function removeRecentPoll(pollId: string): void {
+  try {
+    const existing = getRecentPolls();
+    const updated = existing.filter((p) => p.pollId !== pollId);
+    localStorage.setItem(RECENT_POLLS_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
+export function clearRecentPolls(): void {
+  try {
+    localStorage.removeItem(RECENT_POLLS_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 /** Draft poll autosave */
 const DRAFT_KEY = 'hpoll_draft_poll';
 

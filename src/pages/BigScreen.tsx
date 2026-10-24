@@ -27,16 +27,23 @@ const BigScreen: React.FC = () => {
   // Subscriptions
   useEffect(() => {
     if (!pollId) return;
-    const u1 = subscribeToPoll(pollId, (p) => {
-      // Trigger reveal sequence when status changes to 'revealed'
-      if (prevStatus.current !== 'revealed' && p.status === 'revealed') {
-        const isReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!isMuted() && !isReduced) { playCreak(); }
-        setRevealStep(isReduced ? 999 : 0);
+    const u1 = subscribeToPoll(
+      pollId,
+      (p) => {
+        // Trigger reveal sequence when status changes to 'revealed'
+        if (prevStatus.current !== 'revealed' && p.status === 'revealed') {
+          const isReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!isMuted() && !isReduced) { playCreak(); }
+          setRevealStep(isReduced ? 999 : 0);
+        }
+        prevStatus.current = p.status;
+        setPoll(p);
+      },
+      undefined,
+      () => {
+        window.location.href = '/';
       }
-      prevStatus.current = p.status;
-      setPoll(p);
-    });
+    );
     const u2 = subscribeToOptions(pollId, setOptions);
     const u3 = subscribeToParticipants(pollId, setParticipants);
     const u4 = subscribeToVotes(pollId, setVotes);

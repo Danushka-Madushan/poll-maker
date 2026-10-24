@@ -623,6 +623,32 @@ a:hover {
   z-index: 1;
 }
 
+.btn-hold-primary {
+  border: 3px solid var(--bone);
+  background-color: var(--ink);
+  color: var(--bone);
+  box-shadow: 4px 4px 0 var(--bone);
+}
+.btn-hold-primary .btn-hold-fill {
+  background-color: var(--pumpkin);
+}
+.btn-hold-primary.holding {
+  color: var(--void);
+}
+
+.btn-hold-danger {
+  border: 3px solid var(--blood);
+  background-color: var(--ink);
+  color: var(--bone);
+  box-shadow: 4px 4px 0 var(--blood);
+}
+.btn-hold-danger .btn-hold-fill {
+  background-color: var(--blood);
+}
+.btn-hold-danger.holding {
+  color: var(--bone);
+}
+
 /* ============================================================
    BIG SCREEN (TV/projector) mode
    ============================================================ */

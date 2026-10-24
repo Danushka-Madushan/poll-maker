@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BatsAnimation from '../components/ui/BatsAnimation';
 import { PumpkinIcon, BatIcon, CandleIcon, SkullIcon } from '../components/ui/HalloweenIcons';
+import { useToast } from '../components/ui/ToastContext';
+import { purgePoll, purgeAllRecentPolls } from '../firebase/pollService';
 import { getRecentPolls } from '../utils/device';
 import type { RecentPoll } from '../utils/device';
 
 /** Home screen — host entry point */
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const [recent] = useState<RecentPoll[]>(() => getRecentPolls());
+  const { addToast } = useToast();
+  const [recent, setRecent] = useState<RecentPoll[]>(() => getRecentPolls());
   const [resumeCode, setResumeCode] = useState('');
 
   const handleResume = (poll: RecentPoll) => {
@@ -24,6 +27,35 @@ const Home: React.FC = () => {
       navigate(`/host/${parts[0]}?token=${parts[1]}`);
     } else {
       navigate(`/host/${trimmed}`);
+    }
+  };
+
+  const handlePurgeOne = async (e: React.MouseEvent, poll: RecentPoll) => {
+    e.stopPropagation();
+    const confirmed = window.confirm(
+      `PURGE "${poll.title.toUpperCase()}" PERMANENTLY?\n\nThis will destroy this poll, all options, and all votes from Firestore and this device. This cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      await purgePoll(poll.pollId, poll.hostToken);
+      setRecent((prev) => prev.filter((p) => p.pollId !== poll.pollId));
+      addToast({ message: 'Poll permanently purged from existence.' });
+    } catch (err) {
+      addToast({ message: `Purge failed: ${(err as Error).message}` });
+    }
+  };
+
+  const handlePurgeAll = async () => {
+    const confirmed = window.confirm(
+      'PURGE ALL PAST POLLS PERMANENTLY?\n\nThis will destroy all past polls from Firestore and this device. This cannot be undone.'
+    );
+    if (!confirmed) return;
+    try {
+      await purgeAllRecentPolls();
+      setRecent([]);
+      addToast({ message: 'All past polls permanently purged.' });
+    } catch (err) {
+      addToast({ message: `Purge all failed: ${(err as Error).message}` });
     }
   };
 
@@ -88,22 +120,71 @@ const Home: React.FC = () => {
           {/* Recent polls */}
           {recent.length > 0 && (
             <div style={{ marginTop: 16 }}>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Recent polls
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                  Recent polls
+                </p>
+                <button
+                  className="btn-ghost"
+                  onClick={handlePurgeAll}
+                  style={{ fontSize: 10, padding: '2px 6px', borderColor: 'var(--blood)', color: 'var(--blood)' }}
+                  title="Purge all past polls from Firestore and device"
+                >
+                  💀 PURGE ALL
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {recent.map((poll) => (
-                  <button
+                  <div
                     key={poll.pollId}
-                    className="btn-ghost"
-                    onClick={() => handleResume(poll)}
-                    style={{ textAlign: 'left', justifyContent: 'flex-start' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'var(--ink)',
+                      border: '2px solid var(--ash)',
+                      padding: '4px 8px',
+                    }}
                   >
-                    {poll.title}
-                    <span style={{ marginLeft: 'auto', opacity: 0.6, fontSize: 11 }}>
-                      {new Date(poll.createdAt).toLocaleDateString()}
-                    </span>
-                  </button>
+                    <button
+                      className="btn-ghost"
+                      onClick={() => handleResume(poll)}
+                      style={{
+                        flex: 1,
+                        textAlign: 'left',
+                        justifyContent: 'flex-start',
+                        border: 'none',
+                        padding: '6px 4px',
+                        background: 'transparent',
+                        color: 'var(--bone)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      title="Resume as host"
+                    >
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 'bold' }}>
+                        {poll.title}
+                      </span>
+                      <span style={{ marginLeft: 'auto', opacity: 0.6, fontSize: 11, fontFamily: 'var(--font-mono)', paddingLeft: 8, whiteSpace: 'nowrap' }}>
+                        {new Date(poll.createdAt).toLocaleDateString()}
+                      </span>
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      onClick={(e) => handlePurgeOne(e, poll)}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: 11,
+                        borderColor: 'var(--blood)',
+                        color: 'var(--blood)',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={`Purge "${poll.title}" everywhere`}
+                    >
+                      ✖ PURGE
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
