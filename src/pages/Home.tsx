@@ -111,22 +111,41 @@ const Home: React.FC = () => {
         </div>
 
         {/* How it works strip */}
-        <div style={{ width: '100%', marginTop: 16, borderTop: '2px solid var(--ash)', paddingTop: 24 }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
-            HOW IT WORKS
+        <div style={{ width: '100%', marginTop: 20, borderTop: '2px solid var(--ash)', paddingTop: 24 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.12em', textAlign: 'center' }}>
+            ✦ HOW THE RITUAL WORKS ✦
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {[
-              { n: '1', label: 'CREATE', icon: <PumpkinIcon size={24} color="var(--pumpkin)" /> },
-              { n: '2', label: 'SCAN',   icon: <BatIcon size={24} color="var(--bone)" /> },
-              { n: '3', label: 'VOTE',   icon: <CandleIcon size={24} color="var(--toxic)" /> },
-              { n: '4', label: 'REVEAL', icon: <SkullIcon size={24} color="var(--pumpkin)" /> },
+              { n: '01', label: 'CREATE', icon: <PumpkinIcon size={26} color="var(--pumpkin)" /> },
+              { n: '02', label: 'SCAN',   icon: <BatIcon size={28} color="var(--bone)" /> },
+              { n: '03', label: 'VOTE',   icon: <CandleIcon size={26} color="var(--toxic)" /> },
+              { n: '04', label: 'REVEAL', icon: <SkullIcon size={26} color="var(--pumpkin)" /> },
             ].map((step) => (
-              <div key={step.n} style={{ textAlign: 'center', padding: '12px 6px', border: '2px solid var(--ash)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div>{step.icon}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {step.n}. {step.label}
+              <div
+                key={step.n}
+                style={{
+                  background: 'var(--ink)',
+                  border: '2px solid var(--bone)',
+                  boxShadow: '4px 4px 0 var(--bone)',
+                  padding: '12px 6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  minHeight: 112,
+                  textAlign: 'center',
+                }}
+              >
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--pumpkin)', letterSpacing: '0.1em', fontWeight: 700 }}>
+                  {step.n}
+                </span>
+                <div style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {step.icon}
                 </div>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, color: 'var(--bone)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {step.label}
+                </span>
               </div>
             ))}
           </div>
