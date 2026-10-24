@@ -26,7 +26,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './config';
 import type { Poll, PollOption, Participant, Vote, PollResult, PollStatus, VoteTally } from '../types/poll';
-import { generateId, generateJoinCode, generateHostToken, orderToLabel } from '../utils/code';
+import { generateId, generateJoinCode, formatJoinCode, normalizeJoinCode, generateHostToken, orderToLabel } from '../utils/code';
 
 /* ------------------------------------------------------------------ */
 /*  LOCAL BROADCAST CHANNEL & STORAGE (Fallback & Instant Sync)       */
@@ -172,6 +172,7 @@ export async function createPoll(input: CreatePollInput): Promise<{ pollId: stri
   saveLocalOptions(pollId, options);
   // Also register joinCode mapping
   localStorage.setItem(`hpoll_code_${joinCode.toUpperCase()}`, pollId);
+  localStorage.setItem(`hpoll_code_${formatJoinCode(joinCode)}`, pollId);
 
   // Attempt Firestore write
   try {
@@ -186,6 +187,56 @@ export async function createPoll(input: CreatePollInput): Promise<{ pollId: stri
   }
 
   return { pollId, hostToken };
+}
+
+/** Updates poll draft options and settings while in Lobby status */
+export async function updatePollDraft(
+  pollId: string,
+  hostToken: string,
+  data: {
+    title: string;
+    subtitle?: string;
+    settings: Poll['settings'];
+    options: Array<{ title: string; imageUrl: string }>;
+  }
+): Promise<void> {
+  const local = getLocalPoll(pollId);
+  if (!local || local.hostToken !== hostToken) throw new Error('Unauthorized');
+  if (local.status !== 'lobby') throw new Error('Cannot edit options once poll is started');
+
+  const updatedPoll: Omit<Poll, 'options'> = {
+    ...local,
+    title: data.title,
+    subtitle: data.subtitle ?? '',
+    settings: data.settings,
+  };
+
+  const newOptions: PollOption[] = data.options.map((opt, i) => ({
+    id: generateId(),
+    pollId,
+    order: i,
+    label: orderToLabel(i),
+    title: opt.title,
+    imageUrl: opt.imageUrl,
+  }));
+
+  saveLocalPoll(updatedPoll);
+  saveLocalOptions(pollId, newOptions);
+
+  try {
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'polls', pollId), {
+      title: data.title,
+      subtitle: data.subtitle ?? '',
+      settings: data.settings,
+    });
+    for (const opt of newOptions) {
+      batch.set(doc(db, 'polls', pollId, 'options', opt.id), opt);
+    }
+    await batch.commit();
+  } catch (err) {
+    console.warn('Firestore updatePollDraft notice:', err);
+  }
 }
 
 /** Updates poll status. Validates hostToken before writing. */
@@ -244,13 +295,14 @@ export async function getPoll(pollId: string): Promise<Poll | null> {
 
 /** Finds an active poll by its 6-char join code. */
 export async function getPollByJoinCode(code: string): Promise<Poll | null> {
-  const cleanCode = code.toUpperCase();
+  const cleanCode = normalizeJoinCode(code);
+  const formattedCode = formatJoinCode(cleanCode);
 
   // Try Firestore first
   try {
     const q = query(
       collection(db, 'polls'),
-      where('joinCode', '==', cleanCode),
+      where('joinCode', 'in', [cleanCode, formattedCode]),
       where('status', 'in', ['lobby', 'live', 'closed', 'revealed'])
     );
     const snap = await getDocs(q);
@@ -268,7 +320,8 @@ export async function getPollByJoinCode(code: string): Promise<Poll | null> {
   }
 
   // Fallback to local
-  const localPollId = localStorage.getItem(`hpoll_code_${cleanCode}`);
+  const localPollId = localStorage.getItem(`hpoll_code_${cleanCode}`) ||
+                      localStorage.getItem(`hpoll_code_${formattedCode}`);
   if (localPollId) {
     return getPoll(localPollId);
   }
