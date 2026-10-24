@@ -1,1 +1,660 @@
 @import "tailwindcss";
+
+/* ============================================================
+   HALLOWEEN DESIGN TOKENS — strictly from Website Design Guide
+   ============================================================ */
+:root {
+  --void:    #0D0B10;
+  --ink:     #1A1620;
+  --bone:    #F4EEDF;
+  --pumpkin: #FF6B00;
+  --toxic:   #B6FF2E;
+  --blood:   #E0283C;
+  --witch:   #7A3BE0;
+  --ash:     #8A8394;
+
+  /* Spacing scale: 4, 8, 16, 24, 32, 48, 64 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* Typography */
+  --font-display: 'Archivo Black', Impact, sans-serif;
+  --font-body:    'Space Grotesk', sans-serif;
+  --font-mono:    'Space Mono', monospace;
+
+  /* Borders */
+  --border-std:  3px solid var(--bone);
+  --border-dark: 4px solid var(--void);
+  --border-pump: 3px solid var(--pumpkin);
+
+  /* Offset block — the ONE permitted use of box-shadow */
+  --offset: 8px 8px 0 var(--pumpkin);
+  --offset-bone: 8px 8px 0 var(--bone);
+  --offset-blood: 8px 8px 0 var(--blood);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  border-radius: 0 !important; /* Design rule: ZERO rounded corners */
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--void);
+  color: var(--bone);
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  /* Subtle halftone dot pattern at 5% opacity */
+  background-image: radial-gradient(circle, var(--bone) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-attachment: fixed;
+  background-color: var(--void);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-color: var(--void);
+  opacity: 0.95;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  margin: 0;
+}
+
+p, span, label, button, input, textarea, select {
+  font-family: var(--font-body);
+}
+
+code, .mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+a {
+  color: var(--pumpkin);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Focus styles — 3px pumpkin outline, 2px offset */
+*:focus-visible {
+  outline: 3px solid var(--pumpkin);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+/* Offset block */
+.offset-block {
+  box-shadow: var(--offset);
+  transition: box-shadow 120ms linear, transform 120ms linear;
+}
+.offset-block:hover {
+  box-shadow: 4px 4px 0 var(--pumpkin);
+  transform: translate(4px, 4px);
+}
+.offset-block:active {
+  box-shadow: none;
+  transform: translate(8px, 8px);
+}
+
+.offset-bone {
+  box-shadow: var(--offset-bone);
+}
+.offset-blood {
+  box-shadow: var(--offset-blood);
+}
+
+/* Hazard stripes — diagonal pumpkin/void */
+.hazard-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--pumpkin) 0px,
+    var(--pumpkin) 12px,
+    var(--void) 12px,
+    var(--void) 24px
+  );
+}
+
+/* Zig-zag teeth top edge */
+.zigzag-top {
+  position: relative;
+}
+.zigzag-top::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background-image:
+    linear-gradient(135deg, var(--ink) 25%, transparent 25%),
+    linear-gradient(225deg, var(--ink) 25%, transparent 25%);
+  background-size: 20px 10px;
+  background-position: 0 0, 10px 0;
+  background-repeat: repeat-x;
+}
+
+/* Panel base */
+.panel {
+  background-color: var(--ink);
+  border: var(--border-std);
+  padding: var(--sp-6);
+}
+
+.panel-bone {
+  background-color: var(--bone);
+  color: var(--void);
+  border: var(--border-dark);
+  padding: var(--sp-6);
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* Primary button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  background-color: var(--pumpkin);
+  color: var(--void);
+  border: 3px solid var(--void);
+  padding: 12px 24px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 8px 8px 0 var(--bone);
+  transition: box-shadow 120ms linear, transform 120ms linear;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn-primary:hover {
+  box-shadow: 4px 4px 0 var(--bone);
+  transform: translate(4px, 4px);
+}
+.btn-primary:active {
+  box-shadow: none;
+  transform: translate(8px, 8px);
+}
+.btn-primary:disabled {
+  background-color: var(--ash);
+  color: var(--ink);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Danger button */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  background-color: var(--blood);
+  color: var(--bone);
+  border: 3px solid var(--void);
+  padding: 12px 24px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 8px 8px 0 var(--bone);
+  transition: box-shadow 120ms linear, transform 120ms linear;
+  user-select: none;
+}
+.btn-danger:hover {
+  box-shadow: 4px 4px 0 var(--bone);
+  transform: translate(4px, 4px);
+}
+.btn-danger:active {
+  box-shadow: none;
+  transform: translate(8px, 8px);
+}
+
+/* Secondary button */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  background-color: transparent;
+  color: var(--bone);
+  border: 3px solid var(--bone);
+  padding: 10px 20px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background-color 120ms linear, color 120ms linear;
+  user-select: none;
+}
+.btn-secondary:hover {
+  background-color: var(--bone);
+  color: var(--void);
+}
+
+/* Ghost button */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  background-color: transparent;
+  color: var(--ash);
+  border: 2px solid var(--ash);
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 120ms, color 120ms;
+}
+.btn-ghost:hover {
+  border-color: var(--bone);
+  color: var(--bone);
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+.input {
+  background-color: var(--void);
+  color: var(--bone);
+  border: 3px solid var(--bone);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  width: 100%;
+  outline: none;
+  transition: border-color 120ms;
+}
+.input:focus {
+  border-color: var(--pumpkin);
+}
+.input::placeholder {
+  color: var(--ash);
+}
+.input.input-error {
+  border-color: var(--blood);
+}
+
+/* ============================================================
+   STATUS CHIPS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: 2px solid currentColor;
+}
+.chip-lobby  { color: var(--witch);  border-color: var(--witch);  }
+.chip-live   { color: var(--toxic);  border-color: var(--toxic);  }
+.chip-closed { color: var(--ash);    border-color: var(--ash);    }
+.chip-revealed { color: var(--pumpkin); border-color: var(--pumpkin); }
+
+/* Live blinking indicator (~1Hz) */
+.blink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--toxic);
+  animation: blink-square 1s steps(1) infinite;
+}
+@keyframes blink-square {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ============================================================
+   PROGRESS BARS
+   ============================================================ */
+.progress-track {
+  background-color: var(--ink);
+  border: 2px solid var(--bone);
+  height: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background-color: var(--pumpkin);
+  transition: width 300ms linear;
+}
+/* Segmented ticks */
+.progress-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 18px,
+    var(--void) 18px,
+    var(--void) 20px
+  );
+}
+
+/* Result bars */
+.result-bar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--bone);
+  margin-bottom: var(--sp-2);
+}
+.result-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background-color: var(--pumpkin);
+  transition: width 800ms linear;
+}
+.result-bar-fill.secondary {
+  background-color: var(--bone);
+}
+.result-bar-label {
+  position: relative;
+  z-index: 1;
+  padding: 0 16px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--void);
+  flex: 1;
+}
+.result-bar-pct {
+  position: relative;
+  z-index: 1;
+  padding: 0 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--void);
+}
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background-color: var(--bone);
+  color: var(--void);
+  border: 3px solid var(--void);
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 240px;
+  animation: toast-in 240ms steps(4) forwards;
+}
+@keyframes toast-in {
+  from { transform: translateX(-120%); }
+  to   { transform: translateX(0);    }
+}
+.toast-exit {
+  animation: toast-out 240ms steps(4) forwards;
+}
+@keyframes toast-out {
+  from { transform: translateX(0);    }
+  to   { transform: translateX(-120%); }
+}
+.toast-action {
+  margin-left: auto;
+  background: none;
+  border: 2px solid var(--void);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--void);
+}
+
+/* ============================================================
+   OPTION CARDS
+   ============================================================ */
+.option-card {
+  position: relative;
+  border: 3px solid var(--bone);
+  background-color: var(--ink);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 120ms;
+  aspect-ratio: 1 / 1;
+}
+.option-card.selected {
+  border: 4px solid var(--pumpkin);
+  box-shadow: 6px 6px 0 var(--pumpkin);
+}
+.option-card.selected .check-block {
+  display: flex;
+}
+.option-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.option-label-chip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: var(--bone);
+  color: var(--void);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 8px;
+  z-index: 2;
+}
+.option-title-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--void);
+  border-top: 2px solid var(--bone);
+  padding: 6px 10px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--bone);
+  z-index: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.check-block {
+  display: none;
+  position: absolute;
+  bottom: 32px;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  background-color: var(--pumpkin);
+  color: var(--void);
+  font-size: 18px;
+  font-weight: 900;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+/* Empty card */
+.option-card-empty {
+  border: 3px dashed var(--ash);
+  background-color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ash);
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  transition: border-color 120ms, color 120ms;
+}
+.option-card-empty:hover {
+  border-color: var(--pumpkin);
+  color: var(--pumpkin);
+}
+
+/* ============================================================
+   QR CODE CONTAINER
+   ============================================================ */
+.qr-container {
+  background-color: var(--bone);
+  border: 4px solid var(--void);
+  display: inline-flex;
+  padding: 16px;
+  box-shadow: 8px 8px 0 var(--pumpkin);
+}
+
+/* ============================================================
+   HOLD-TO-CONFIRM BUTTON
+   ============================================================ */
+.btn-hold {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  border: 3px solid var(--void);
+  padding: 14px 28px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bone);
+  background-color: var(--ink);
+  transition: color 120ms;
+  -webkit-touch-callout: none;
+}
+.btn-hold-fill {
+  position: absolute;
+  inset: 0;
+  background-color: var(--pumpkin);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform linear;
+  pointer-events: none;
+}
+.btn-hold.holding .btn-hold-fill {
+  transform: scaleX(1);
+  transition: transform 1s linear;
+}
+.btn-hold.holding {
+  color: var(--void);
+}
+.btn-hold-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   BIG SCREEN (TV/projector) mode
+   ============================================================ */
+.display-screen {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--void);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   SCREEN WIPE TRANSITION
+   ============================================================ */
+.wipe-enter {
+  animation: wipe-in 240ms steps(4) forwards;
+}
+@keyframes wipe-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0);     }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+  .btn-primary, .btn-danger {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+}
