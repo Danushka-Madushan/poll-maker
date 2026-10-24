@@ -10,6 +10,7 @@ import {
 } from '../firebase/pollService';
 import type { Poll, PollOption, Participant, Vote } from '../types/poll';
 import { playCreak, playSting, playTick, isMuted } from '../utils/audio';
+import { formatJoinCode } from '../utils/code';
 
 /** Big Screen display — designed for TV/projector, no host controls */
 const BigScreen: React.FC = () => {
@@ -106,20 +107,20 @@ const BigScreen: React.FC = () => {
           </div>
 
           <div style={{ borderTop: '3px solid var(--bone)', paddingTop: 24 }}>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--ash)', marginBottom: 8, letterSpacing: '0.08em' }}>JOIN CODE</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(40px, 6vw, 88px)', color: 'var(--bone)', letterSpacing: '0.16em', margin: 0 }}>
-              {poll.joinCode}
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--ash)', marginBottom: 8, letterSpacing: '0.08em' }}>JOIN CODE</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(48px, 7vw, 100px)', color: 'var(--bone)', letterSpacing: '0.16em', margin: 0 }}>
+              {formatJoinCode(poll.joinCode)}
             </p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(12px, 1.5vw, 18px)', color: 'var(--ash)', marginTop: 8, wordBreak: 'break-all' }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--ash)', marginTop: 12, wordBreak: 'break-all' }}>
               {joinUrl}
             </p>
           </div>
         </div>
 
         {/* Bottom strip — joined count */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, borderTop: '3px solid var(--bone)', background: 'var(--ink)', padding: '12px 48px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="blink-dot" />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(18px, 2.5vw, 28px)', color: 'var(--toxic)', letterSpacing: '0.08em' }}>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, borderTop: '4px solid var(--bone)', background: 'var(--ink)', padding: '16px 48px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span className="blink-dot" style={{ width: 14, height: 14 }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(28px, 3.5vw, 44px)', color: 'var(--toxic)', letterSpacing: '0.08em' }}>
             {participants.length} JOINED
           </span>
         </div>
@@ -130,27 +131,30 @@ const BigScreen: React.FC = () => {
   /* ---- LIVE STATE ---- */
   if (poll.status === 'live') {
     return (
-      <div className="display-screen" style={{ padding: 32, gap: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '3px solid var(--bone)', paddingBottom: 16 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 4vw, 56px)', color: 'var(--bone)', margin: 0 }}>{poll.title}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span className="blink-dot" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--toxic)', letterSpacing: '0.08em' }}>VOTING LIVE</span>
+      <div className="display-screen" style={{ padding: 0, gap: 0 }}>
+        {/* Hazard Stripes Banner on Live */}
+        <div className="hazard-stripes" style={{ height: 14, width: '100%' }} />
+
+        <div style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '4px solid var(--bone)' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 64px)', color: 'var(--bone)', margin: 0 }}>{poll.title}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span className="blink-dot" style={{ width: 14, height: 14 }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--toxic)', letterSpacing: '0.08em' }}>VOTING LIVE</span>
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, overflowY: 'auto' }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20, padding: 32, overflowY: 'auto' }}>
           {options.map((opt) => {
             const tally = result?.tallies.find((t) => t.optionId === opt.id);
             return (
-              <div key={opt.id} style={{ border: '3px solid var(--bone)', background: 'var(--ink)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div key={opt.id} style={{ border: '4px solid var(--bone)', background: 'var(--ink)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ aspectRatio: '1/1', overflow: 'hidden' }}>
                   <img src={opt.imageUrl} alt={opt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
-                <div style={{ padding: '8px 12px', borderTop: '2px solid var(--bone)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, textTransform: 'uppercase' }}>{opt.label} — {opt.title}</span>
+                <div style={{ padding: '12px 16px', borderTop: '3px solid var(--bone)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 24, textTransform: 'uppercase' }}>{opt.label} — {opt.title}</span>
                   {poll.settings.showLiveCountsBigScreen && tally && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--pumpkin)' }}>{tally.count}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--pumpkin)' }}>{tally.count}</span>
                   )}
                 </div>
               </div>
@@ -158,9 +162,9 @@ const BigScreen: React.FC = () => {
           })}
         </div>
 
-        <div style={{ borderTop: '3px solid var(--bone)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--ash)' }}>{votes.length} VOTES CAST</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--ash)' }}>CODE: {poll.joinCode}</span>
+        <div style={{ borderTop: '4px solid var(--bone)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--ink)' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--ash)' }}>{votes.length} VOTES CAST</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--ash)' }}>CODE: {formatJoinCode(poll.joinCode)}</span>
         </div>
       </div>
     );
@@ -186,6 +190,21 @@ const BigScreen: React.FC = () => {
 
   /* ---- REVEALED STATE ---- */
   if (poll.status === 'revealed' && result) {
+    if (result.totalVotes === 0) {
+      return (
+        <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', gap: 24, padding: 48 }}>
+          <div className="hazard-stripes" style={{ height: 20, width: '100%', maxWidth: 800, marginBottom: 32 }} />
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(44px, 8vw, 110px)', color: 'var(--pumpkin)', textAlign: 'center', lineHeight: 0.9 }}>
+            NOBODY VOTED.<br />SPOOKY.
+          </h1>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 32, color: 'var(--ash)', textAlign: 'center', marginTop: 24 }}>
+            THE DEAD REMAIN SILENT.
+          </p>
+          <div className="hazard-stripes" style={{ height: 20, width: '100%', maxWidth: 800, marginTop: 32 }} />
+        </div>
+      );
+    }
+
     const sortedByRankAsc = [...result.tallies].reverse(); // last to first for reveal
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const visibleCount  = reducedMotion ? sortedByRankAsc.length : Math.max(0, revealStep - 1);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BatsAnimation from '../components/ui/BatsAnimation';
+import { PumpkinIcon, BatIcon, CandleIcon, SkullIcon } from '../components/ui/HalloweenIcons';
 import { getRecentPolls } from '../utils/device';
 import type { RecentPoll } from '../utils/device';
 
@@ -116,13 +117,13 @@ const Home: React.FC = () => {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
             {[
-              { n: '1', label: 'CREATE', icon: '🎃' },
-              { n: '2', label: 'SCAN',   icon: '📱' },
-              { n: '3', label: 'VOTE',   icon: '✅' },
-              { n: '4', label: 'REVEAL', icon: '🏆' },
+              { n: '1', label: 'CREATE', icon: <PumpkinIcon size={24} color="var(--pumpkin)" /> },
+              { n: '2', label: 'SCAN',   icon: <BatIcon size={24} color="var(--bone)" /> },
+              { n: '3', label: 'VOTE',   icon: <CandleIcon size={24} color="var(--toxic)" /> },
+              { n: '4', label: 'REVEAL', icon: <SkullIcon size={24} color="var(--pumpkin)" /> },
             ].map((step) => (
-              <div key={step.n} style={{ textAlign: 'center', padding: 12, border: '2px solid var(--ash)' }}>
-                <div style={{ fontSize: 24, marginBottom: 4 }}>{step.icon}</div>
+              <div key={step.n} style={{ textAlign: 'center', padding: '12px 6px', border: '2px solid var(--ash)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <div>{step.icon}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   {step.n}. {step.label}
                 </div>

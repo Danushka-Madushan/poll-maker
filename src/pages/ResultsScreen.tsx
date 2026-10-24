@@ -9,6 +9,7 @@ import {
   computeResults,
   exportResultsCSV,
 } from '../firebase/pollService';
+import { exportResultPNG } from '../utils/canvasExport';
 import type { Poll, PollOption, Participant, Vote } from '../types/poll';
 import { getMyVote } from '../firebase/pollService';
 import { getDeviceToken } from '../utils/device';
@@ -118,11 +119,27 @@ const ResultsScreen: React.FC = () => {
         </h1>
         <button className="btn-ghost" onClick={replayReveal}>↺ REPLAY</button>
         <button className="btn-ghost" onClick={() => exportResultsCSV({ ...poll, options } as Poll, result)}>⬇ CSV</button>
+        <button className="btn-ghost" onClick={() => exportResultPNG({ ...poll, options } as Poll, result)}>⬇ SHAREABLE PNG</button>
         <button className="btn-secondary" onClick={() => navigate('/')}>NEW POLL</button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
-        {/* Winner block */}
+        {/* Zero votes edge case */}
+        {result.totalVotes === 0 ? (
+          <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 6vw, 64px)', color: 'var(--pumpkin)', marginBottom: 16 }}>
+              NOBODY VOTED. SPOOKY.
+            </h2>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--ash)', marginBottom: 32 }}>
+              THE DEAD REMAIN SILENT.
+            </p>
+            <button className="btn-secondary" onClick={() => navigate('/')}>
+              CREATE NEW POLL
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Winner block */}
         {winnerVisible && (
           <div style={{ padding: '24px 24px 0' }}>
             {result.isTie && (
@@ -171,7 +188,7 @@ const ResultsScreen: React.FC = () => {
             const isWinner = result.winners.includes(tally.optionId);
             const isMyVote = myVoteIds.includes(tally.optionId);
             return (
-              <div key={tally.optionId} className="result-bar" style={{ marginBottom: 8 }}>
+              <div key={tally.optionId} className="result-bar" style={{ height: 56, marginBottom: 8 }}>
                 <div
                   className="result-bar-fill"
                   style={{ width: `${tally.percentage}%`, background: isWinner ? 'var(--pumpkin)' : 'var(--bone)', transition: 'width 800ms linear' }}
@@ -201,6 +218,8 @@ const ResultsScreen: React.FC = () => {
               <p style={{ fontFamily: 'var(--font-display)', fontSize: 32, color: 'var(--bone)', margin: 0 }}>{result.turnoutPercentage}%</p>
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
