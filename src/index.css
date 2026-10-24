@@ -478,16 +478,26 @@ a:hover {
   background-color: var(--ink);
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 120ms;
+  transition: border-color 120ms linear, box-shadow 120ms linear, transform 120ms linear;
   aspect-ratio: 1 / 1;
   isolation: isolate;
+  box-shadow: 4px 4px 0 var(--bone);
+}
+.option-card:hover:not(.cursor-default) {
+  border-color: var(--pumpkin);
+  box-shadow: 6px 6px 0 var(--bone);
+  transform: translate(-2px, -2px);
 }
 .option-card.selected {
   border: 4px solid var(--pumpkin);
   box-shadow: 6px 6px 0 var(--pumpkin);
+  transform: translate(-2px, -2px);
 }
 .option-card.selected .check-block {
   display: flex;
+}
+.option-card.selected .option-title-bar {
+  border-top: 2px solid var(--pumpkin);
 }
 .option-card img {
   width: 100%;
