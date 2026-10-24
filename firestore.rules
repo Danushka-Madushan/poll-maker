@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Polls can be read by anyone; can be created by anyone; updated if hostToken matches
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create: if request.resource.data.title is string && request.resource.data.status == 'lobby';
+      allow update: if request.resource.data.hostToken == resource.data.hostToken;
+
+      // Options subcollection
+      match /options/{optionId} {
+        allow read: if true;
+        allow write: if true;
+      }
+
+      // Participants subcollection (anonymous device token)
+      match /participants/{deviceToken} {
+        allow read: if true;
+        allow write: if true;
+      }
+
+      // Votes subcollection (one vote per device token)
+      match /votes/{deviceToken} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+  }
+}
