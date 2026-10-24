@@ -56,6 +56,82 @@ export function cropToSquare(
   });
 }
 
+export interface CropTransformParams {
+  x: number;               // pan offset X (in display coordinates relative to crop center)
+  y: number;               // pan offset Y (in display coordinates relative to crop center)
+  zoom: number;            // zoom multiplier (1.0 = base fit)
+  rotation: number;        // rotation in degrees (0, 90, 180, 270)
+  cropDisplaySize: number; // width/height of the square crop area displayed on screen
+}
+
+/**
+ * Crops an image with custom pan position, zoom factor, and 90-degree step rotation.
+ * Renders to output canvas and returns compressed WebP/JPEG data URL.
+ */
+export function cropWithTransform(
+  src: string,
+  params: CropTransformParams,
+  outputSize = 600,
+  quality = 0.82
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = outputSize;
+      canvas.height = outputSize;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas 2D context unavailable'));
+        return;
+      }
+
+      // Fill background with void
+      ctx.fillStyle = '#0D0B10';
+      ctx.fillRect(0, 0, outputSize, outputSize);
+
+      const { naturalWidth: nw, naturalHeight: nh } = img;
+      const isRotated90or270 = params.rotation % 180 !== 0;
+      const effectiveW = isRotated90or270 ? nh : nw;
+      const effectiveH = isRotated90or270 ? nw : nh;
+
+      const baseScale = Math.max(
+        params.cropDisplaySize / effectiveW,
+        params.cropDisplaySize / effectiveH
+      );
+
+      const scaleMultiplier = outputSize / params.cropDisplaySize;
+
+      ctx.save();
+      // 1. Move to canvas center
+      ctx.translate(outputSize / 2, outputSize / 2);
+
+      // 2. Translate by user offset scaled to canvas
+      ctx.translate(params.x * scaleMultiplier, params.y * scaleMultiplier);
+
+      // 3. Rotate by angle
+      ctx.rotate((params.rotation * Math.PI) / 180);
+
+      // 4. Combined zoom & scale
+      const totalScale = baseScale * params.zoom * scaleMultiplier;
+      ctx.scale(totalScale, totalScale);
+
+      // 5. Draw image centered
+      ctx.drawImage(img, -nw / 2, -nh / 2, nw, nh);
+      ctx.restore();
+
+      const type = canvas.toDataURL('image/webp', 0.01).startsWith('data:image/webp')
+        ? 'image/webp'
+        : 'image/jpeg';
+
+      resolve(canvas.toDataURL(type, quality));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
 /** Returns file size in KB from a data URL */
 export function dataUrlSizeKB(dataUrl: string): number {
   const base64 = dataUrl.split(',')[1] ?? '';

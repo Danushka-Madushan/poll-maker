@@ -745,6 +745,49 @@ a:hover {
 }
 
 /* ============================================================
+   BRUTALIST RANGE SLIDER
+   ============================================================ */
+input[type="range"].brutalist-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--void);
+  border: 2px solid var(--bone);
+  outline: none;
+  border-radius: 0 !important;
+  margin: 10px 0;
+}
+
+input[type="range"].brutalist-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--pumpkin);
+  border: 2px solid var(--void);
+  cursor: grab;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 var(--bone);
+  transition: transform 80ms linear;
+}
+
+input[type="range"].brutalist-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+
+input[type="range"].brutalist-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--pumpkin);
+  border: 2px solid var(--void);
+  cursor: grab;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 var(--bone);
+}
+
+/* ============================================================
    REDUCED MOTION
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
