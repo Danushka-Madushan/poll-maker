@@ -146,9 +146,9 @@ const BigScreen: React.FC = () => {
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => { });
+      document.documentElement.requestFullscreen().catch(() => {});
     } else {
-      document.exitFullscreen().catch(() => { });
+      document.exitFullscreen().catch(() => {});
     }
   };
 
@@ -850,7 +850,6 @@ const BigScreen: React.FC = () => {
     const renderCryptMonolith = (
       badge: string,
       heightPct: string,
-      roman: string,
       accentColor: string,
       isCenter = false
     ) => (
@@ -926,12 +925,12 @@ const BigScreen: React.FC = () => {
           style={{
             borderTop: `3px solid ${accentColor}`,
             background: 'var(--void)',
-            padding: '12px 0',
+            padding: '12px 16px',
             textAlign: 'center',
           }}
         >
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: accentColor }}>
-            {roman}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: accentColor, letterSpacing: '0.14em', fontWeight: 700 }}>
+            AWAITING TALLY…
           </span>
         </div>
       </div>
@@ -1141,8 +1140,8 @@ const BigScreen: React.FC = () => {
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'space-evenly',
-                      padding: '8px 16px',
-                      gap: 6,
+                      padding: '10px 16px',
+                      gap: 8,
                     }}
                   >
                     {/* Chamfered Portrait with Corner Option Chip */}
@@ -1150,8 +1149,8 @@ const BigScreen: React.FC = () => {
                       <div
                         className="chamfer-frame"
                         style={{
-                          width: 'min(12.5vw, 18.5vh)',
-                          height: 'min(12.5vw, 18.5vh)',
+                          width: 'min(13.5vw, 20.5vh)',
+                          height: 'min(13.5vw, 20.5vh)',
                           border: '3px solid var(--bone)',
                           background: 'var(--void)',
                           boxShadow: '4px 4px 0 var(--bone)',
@@ -1190,7 +1189,7 @@ const BigScreen: React.FC = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: 6,
+                        gap: 8,
                         width: '100%',
                         flexShrink: 0,
                       }}
@@ -1198,7 +1197,7 @@ const BigScreen: React.FC = () => {
                       <h2
                         style={{
                           fontFamily: 'var(--font-display)',
-                          fontSize: 'clamp(20px, 2.2vw, 30px)',
+                          fontSize: 'clamp(22px, 2.4vw, 32px)',
                           color: 'var(--bone)',
                           margin: 0,
                           textTransform: 'uppercase',
@@ -1241,7 +1240,7 @@ const BigScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 2nd Place Architectural Pedestal Base */}
+                {/* 2nd Place Simplified Pedestal Base (Stripes + Bar + Vote Box Only) */}
                 <div
                   style={{
                     background: 'var(--ink)',
@@ -1251,36 +1250,12 @@ const BigScreen: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    padding: '10px 16px 14px',
-                    gap: 6,
+                    padding: '12px 16px 14px',
+                    gap: 10,
                     flexShrink: 0,
                   }}
                 >
                   <div className="hazard-stripes-bone" style={{ height: 8, width: '100%' }} />
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(26px, 3vw, 38px)',
-                        color: 'var(--bone)',
-                        lineHeight: 0.9,
-                      }}
-                    >
-                      II
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
-                        color: 'var(--bone)',
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        fontWeight: 700,
-                      }}
-                    >
-                      RUNNER-UP
-                    </span>
-                  </div>
 
                   <SegmentedVoteBar
                     percentage={tally2.percentage}
@@ -1292,7 +1267,7 @@ const BigScreen: React.FC = () => {
                     style={{
                       background: 'var(--void)',
                       border: '2px solid var(--bone)',
-                      padding: '5px 14px',
+                      padding: '8px 14px',
                       width: '100%',
                       textAlign: 'center',
                     }}
@@ -1300,7 +1275,7 @@ const BigScreen: React.FC = () => {
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 'clamp(16px, 1.8vw, 22px)',
+                        fontSize: 'clamp(17px, 1.9vw, 24px)',
                         color: 'var(--bone)',
                         fontWeight: 900,
                       }}
@@ -1311,7 +1286,7 @@ const BigScreen: React.FC = () => {
                 </div>
               </div>
             ) : (
-              renderCryptMonolith('2ND PLACE · RUNNER-UP', '85%', 'II', 'var(--bone)')
+              renderCryptMonolith('2ND PLACE · RUNNER-UP', '85%', 'var(--bone)')
             ))}
 
           {/* ================= 1ST PLACE MONOLITH (CENTER / WINNER) ================= */}
@@ -1341,7 +1316,7 @@ const BigScreen: React.FC = () => {
                   overflow: 'hidden',
                 }}
               >
-                {/* Crown Banner — Pure Geometric SVG Icons, Zero Emoji Clutter */}
+                {/* Crown Banner */}
                 <div
                   style={{
                     background: 'var(--pumpkin)',
@@ -1367,7 +1342,7 @@ const BigScreen: React.FC = () => {
                 </div>
                 <JaggedTeethEdge color="var(--pumpkin)" height={9} />
 
-                {/* Winner Portrait & Identity Body (Viewport-Safe Sizing so Badge Never Clips) */}
+                {/* Winner Portrait & Identity Body */}
                 <div
                   style={{
                     flex: 1,
@@ -1376,8 +1351,8 @@ const BigScreen: React.FC = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'space-evenly',
-                    padding: '8px 18px',
-                    gap: 6,
+                    padding: '10px 18px',
+                    gap: 8,
                   }}
                 >
                   {/* Hero Chamfered Octagon Portrait */}
@@ -1387,8 +1362,8 @@ const BigScreen: React.FC = () => {
                       if (!opt) return null;
                       const boxDim =
                         result.winners.length > 1
-                          ? 'min(10.5vw, 16vh)'
-                          : 'min(14.5vw, 21.5vh)';
+                          ? 'min(11.5vw, 18vh)'
+                          : 'min(16vw, 24vh)';
                       return (
                         <div key={wId} style={{ position: 'relative', display: 'inline-flex' }}>
                           <div
@@ -1436,13 +1411,13 @@ const BigScreen: React.FC = () => {
                     })}
                   </div>
 
-                  {/* Winner Title & Contestant Chip Group — Guaranteed Visible */}
+                  {/* Winner Title & Contestant Chip Group */}
                   <div
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: 6,
+                      gap: 8,
                       width: '100%',
                       flexShrink: 0,
                     }}
@@ -1450,7 +1425,7 @@ const BigScreen: React.FC = () => {
                     <h2
                       style={{
                         fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(24px, 2.8vw, 38px)',
+                        fontSize: 'clamp(26px, 3vw, 40px)',
                         color: 'var(--bone)',
                         margin: 0,
                         textTransform: 'uppercase',
@@ -1464,8 +1439,8 @@ const BigScreen: React.FC = () => {
                     >
                       {result.winners.length > 1
                         ? result.winners
-                          .map((wId) => options.find((o) => o.id === wId)?.title)
-                          .join(' & ')
+                            .map((wId) => options.find((o) => o.id === wId)?.title)
+                            .join(' & ')
                         : opt1.title}
                     </h2>
 
@@ -1499,7 +1474,7 @@ const BigScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Winner Architectural Pedestal Base */}
+              {/* Winner Simplified Pedestal Base (Stripes + Bar + Vote Box Only) */}
               <div
                 style={{
                   background: 'var(--ink)',
@@ -1509,36 +1484,12 @@ const BigScreen: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  padding: '10px 18px 16px',
-                  gap: 7,
+                  padding: '14px 18px 18px',
+                  gap: 10,
                   flexShrink: 0,
                 }}
               >
                 <div className="hazard-stripes" style={{ height: 10, width: '100%' }} />
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: 'clamp(32px, 3.8vw, 48px)',
-                      color: 'var(--pumpkin)',
-                      lineHeight: 0.9,
-                    }}
-                  >
-                    I
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 13,
-                      color: 'var(--bone)',
-                      letterSpacing: '0.16em',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {result.winners.length > 1 ? 'CO-WINNERS' : 'CHAMPION OF THE CRYPT'}
-                  </span>
-                </div>
 
                 <SegmentedVoteBar
                   percentage={tally1.percentage}
@@ -1551,7 +1502,7 @@ const BigScreen: React.FC = () => {
                     background: 'var(--void)',
                     border: '3px solid var(--toxic)',
                     boxShadow: '4px 4px 0 var(--toxic)',
-                    padding: '6px 18px',
+                    padding: '8px 18px',
                     width: '100%',
                     textAlign: 'center',
                   }}
@@ -1559,7 +1510,7 @@ const BigScreen: React.FC = () => {
                   <span
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 'clamp(18px, 2.1vw, 28px)',
+                      fontSize: 'clamp(20px, 2.3vw, 30px)',
                       color: 'var(--toxic)',
                       fontWeight: 900,
                     }}
@@ -1570,7 +1521,7 @@ const BigScreen: React.FC = () => {
               </div>
             </div>
           ) : (
-            renderCryptMonolith('1ST PLACE · WINNER', '97%', 'I', 'var(--pumpkin)', true)
+            renderCryptMonolith('1ST PLACE · WINNER', '97%', 'var(--pumpkin)', true)
           )}
 
           {/* ================= 3RD PLACE MONOLITH (RIGHT WING) ================= */}
@@ -1630,8 +1581,8 @@ const BigScreen: React.FC = () => {
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'space-evenly',
-                      padding: '8px 16px',
-                      gap: 6,
+                      padding: '10px 16px',
+                      gap: 8,
                     }}
                   >
                     {/* Chamfered Octagonal Portrait Frame */}
@@ -1639,8 +1590,8 @@ const BigScreen: React.FC = () => {
                       <div
                         className="chamfer-frame"
                         style={{
-                          width: 'min(12.5vw, 18.5vh)',
-                          height: 'min(12.5vw, 18.5vh)',
+                          width: 'min(13.5vw, 20.5vh)',
+                          height: 'min(13.5vw, 20.5vh)',
                           border: '3px solid var(--ash)',
                           background: 'var(--void)',
                           boxShadow: '4px 4px 0 var(--ash)',
@@ -1679,7 +1630,7 @@ const BigScreen: React.FC = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: 6,
+                        gap: 8,
                         width: '100%',
                         flexShrink: 0,
                       }}
@@ -1687,7 +1638,7 @@ const BigScreen: React.FC = () => {
                       <h2
                         style={{
                           fontFamily: 'var(--font-display)',
-                          fontSize: 'clamp(20px, 2.2vw, 30px)',
+                          fontSize: 'clamp(22px, 2.4vw, 32px)',
                           color: 'var(--bone)',
                           margin: 0,
                           textTransform: 'uppercase',
@@ -1730,7 +1681,7 @@ const BigScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 3rd Place Architectural Pedestal Base */}
+                {/* 3rd Place Simplified Pedestal Base (Stripes + Bar + Vote Box Only) */}
                 <div
                   style={{
                     background: 'var(--ink)',
@@ -1740,36 +1691,12 @@ const BigScreen: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    padding: '10px 16px 14px',
-                    gap: 6,
+                    padding: '12px 16px 14px',
+                    gap: 10,
                     flexShrink: 0,
                   }}
                 >
                   <div className="hazard-stripes" style={{ height: 8, width: '100%' }} />
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(26px, 3vw, 38px)',
-                        color: 'var(--ash)',
-                        lineHeight: 0.9,
-                      }}
-                    >
-                      III
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
-                        color: 'var(--ash)',
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        fontWeight: 700,
-                      }}
-                    >
-                      3RD PLACE
-                    </span>
-                  </div>
 
                   <SegmentedVoteBar
                     percentage={tally3.percentage}
@@ -1781,7 +1708,7 @@ const BigScreen: React.FC = () => {
                     style={{
                       background: 'var(--void)',
                       border: '2px solid var(--ash)',
-                      padding: '5px 14px',
+                      padding: '8px 14px',
                       width: '100%',
                       textAlign: 'center',
                     }}
@@ -1789,7 +1716,7 @@ const BigScreen: React.FC = () => {
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 'clamp(16px, 1.8vw, 22px)',
+                        fontSize: 'clamp(17px, 1.9vw, 24px)',
                         color: 'var(--ash)',
                         fontWeight: 900,
                       }}
@@ -1800,7 +1727,7 @@ const BigScreen: React.FC = () => {
                 </div>
               </div>
             ) : (
-              renderCryptMonolith('3RD PLACE', '85%', 'III', 'var(--ash)')
+              renderCryptMonolith('3RD PLACE', '85%', 'var(--ash)')
             ))}
         </main>
 
