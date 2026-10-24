@@ -1,6 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import {
+  Volume2,
+  VolumeX,
+  ExternalLink,
+  Copy,
+  Pencil,
+  RotateCcw,
+  Plus,
+  Download,
+  FileImage,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Crown,
+  Flame,
+} from 'lucide-react';
 import StatusChip from '../components/ui/StatusChip';
 import HoldButton from '../components/ui/HoldButton';
 import OptionCard from '../components/ui/OptionCard';
@@ -14,7 +30,9 @@ import {
   purgePoll,
   computeResults,
   exportResultsCSV,
+  resolveTieWinner,
 } from '../firebase/pollService';
+import { exportResultPNG } from '../utils/canvasExport';
 import type { Poll, PollOption, Participant, Vote } from '../types/poll';
 import { isMuted, toggleMuted } from '../utils/audio';
 import { formatJoinCode } from '../utils/code';
@@ -57,8 +75,8 @@ const HostDashboard: React.FC = () => {
   // Compute results when votes change
   const result = useMemo(() => {
     if (options.length === 0) return null;
-    return computeResults(votes, options, participants.length);
-  }, [votes, options, participants.length]);
+    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
+  }, [votes, options, participants.length, poll?.decidedWinnerId]);
 
   const changeStatus = useCallback(async (status: Poll['status']) => {
     if (!pollId) return;
@@ -72,6 +90,17 @@ const HostDashboard: React.FC = () => {
       addToast({ message: `Failed to update status: ${(err as Error).message}` });
     }
   }, [pollId, hostToken, poll?.hostToken, addToast]);
+
+  const handlePickWinner = async (optionId: string) => {
+    if (!pollId) return;
+    try {
+      await resolveTieWinner(pollId, hostToken, optionId);
+      setPoll((prev) => (prev ? { ...prev, decidedWinnerId: optionId } : null));
+      addToast({ message: optionId ? 'Decisive champion crowned!' : 'Tie reset to co-winners.' });
+    } catch (err) {
+      addToast({ message: `Failed to resolve tie: ${(err as Error).message}` });
+    }
+  };
 
   const handlePurge = async () => {
     if (!pollId) return;
@@ -132,11 +161,22 @@ const HostDashboard: React.FC = () => {
           {poll.title}
         </h1>
         <StatusChip status={poll.status} />
-        <button className="btn-ghost" onClick={toggleAudio} aria-label={muted ? 'Unmute sound' : 'Mute sound'} title={muted ? 'Sound off' : 'Sound on'}>
-          {muted ? '🔇' : '🔊'}
+        <button
+          className="btn-ghost"
+          onClick={toggleAudio}
+          aria-label={muted ? 'Unmute sound' : 'Mute sound'}
+          title={muted ? 'Sound off' : 'Sound on'}
+          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
-        <button className="btn-secondary" onClick={openBigScreen} aria-label="Open big screen">
-          OPEN BIG SCREEN ↗
+        <button
+          className="btn-secondary"
+          onClick={openBigScreen}
+          aria-label="Open big screen"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+        >
+          OPEN BIG SCREEN <ExternalLink size={16} />
         </button>
       </div>
 
@@ -177,8 +217,9 @@ const HostDashboard: React.FC = () => {
             className="btn-ghost"
             onClick={() => { navigator.clipboard.writeText(joinUrl); addToast({ message: 'Join link copied!' }); }}
             aria-label="Copy join link"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
-            COPY LINK
+            <Copy size={14} /> COPY LINK
           </button>
 
           {/* Joined count */}
@@ -192,10 +233,10 @@ const HostDashboard: React.FC = () => {
               <button
                 className="btn-ghost"
                 onClick={() => setShowParticipants((v) => !v)}
-                style={{ marginTop: 8, fontSize: 11, padding: '4px 8px', width: '100%', justifyContent: 'space-between' }}
+                style={{ marginTop: 8, fontSize: 11, padding: '4px 8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <span>AUDIENCE LIST</span>
-                <span>{showParticipants ? '▲' : '▼'}</span>
+                {showParticipants ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
             )}
             {showParticipants && (
@@ -227,8 +268,9 @@ const HostDashboard: React.FC = () => {
             <button
               className="btn-ghost"
               onClick={() => { navigator.clipboard.writeText(hostUrl); addToast({ message: 'Host link copied!' }); }}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
             >
-              COPY HOST LINK
+              <Copy size={14} /> COPY HOST LINK
             </button>
           </div>
         </div>
@@ -255,6 +297,59 @@ const HostDashboard: React.FC = () => {
                   );
                 })}
               </div>
+            )}
+
+            {/* Tie resolution controls (when poll is closed or revealed) */}
+            {(poll.status === 'closed' || poll.status === 'revealed') && result && result.totalVotes > 0 && (
+              <>
+                {result.isTie && (
+                  <div style={{ marginTop: 24, border: '3px solid var(--pumpkin)', background: 'var(--ink)', padding: 18, boxShadow: '6px 6px 0 var(--pumpkin)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--pumpkin)', marginBottom: 8 }}>
+                      <Flame size={20} />
+                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, textTransform: 'uppercase', margin: 0 }}>
+                        DEADLOCK: TIE BETWEEN CO-WINNERS
+                      </h3>
+                    </div>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', margin: '0 0 14px' }}>
+                      {poll.settings.tieRule === 'host-picks'
+                        ? 'Host tie-breaker rule is active. Select the single champion below:'
+                        : 'Multiple contestants share the lead. You can designate a single winner or keep co-winners:'}
+                    </p>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {result.winners.map((wId) => {
+                        const opt = options.find((o) => o.id === wId);
+                        if (!opt) return null;
+                        return (
+                          <button
+                            key={wId}
+                            className="btn-primary"
+                            onClick={() => handlePickWinner(wId)}
+                            style={{ fontSize: 13, padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          >
+                            <Crown size={15} /> CROWN {opt.label}: {opt.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {result.isTieResolved && (
+                  <div style={{ marginTop: 24, border: '2px solid var(--toxic)', background: 'var(--ink)', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--toxic)', flexWrap: 'wrap' }}>
+                    <Crown size={20} />
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1 }}>
+                      HOST DECIDED WINNER: {options.find((o) => o.id === result.decidedWinnerId)?.title}
+                    </span>
+                    <button
+                      className="btn-ghost"
+                      onClick={() => handlePickWinner('')}
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                    >
+                      RESET TO CO-WINNERS
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Results summary if revealed */}
@@ -292,10 +387,10 @@ const HostDashboard: React.FC = () => {
                 />
                 <button
                   className="btn-secondary"
-                  style={{ fontSize: 18, padding: '14px 24px' }}
+                  style={{ fontSize: 18, padding: '14px 24px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
                   onClick={() => navigate(`/create?edit=${pollId}&token=${hostToken}`)}
                 >
-                  ✎ EDIT OPTIONS
+                  <Pencil size={18} /> EDIT OPTIONS
                 </button>
               </>
             )}
@@ -317,18 +412,56 @@ const HostDashboard: React.FC = () => {
                   className="btn-hold-primary"
                   style={{ fontSize: 18, padding: '14px 32px' } as React.CSSProperties}
                 />
-                <button className="btn-secondary" onClick={() => changeStatus('live')}>
-                  ↩ REOPEN
+                <button
+                  className="btn-secondary"
+                  onClick={() => changeStatus('live')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
+                  <RotateCcw size={16} /> REOPEN
                 </button>
               </>
             )}
             {poll.status === 'revealed' && (
               <>
-                <button className="btn-primary" onClick={() => navigate('/create')}>+ NEW POLL</button>
-                <button className="btn-secondary" onClick={() => navigate(`/results/${pollId}`)}>VIEW RESULTS PAGE ↗</button>
+                <button
+                  className="btn-primary"
+                  onClick={() => navigate('/create')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Plus size={16} /> NEW POLL
+                </button>
+                <button
+                  className="btn-secondary"
+                  onClick={() => navigate(`/results/${pollId}`)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  VIEW RESULTS PAGE <ExternalLink size={16} />
+                </button>
                 {result && (
-                  <button className="btn-ghost" onClick={() => exportResultsCSV({ ...poll, options } as Poll, result)}>
-                    ⬇ EXPORT CSV
+                  <>
+                    <button
+                      className="btn-ghost"
+                      onClick={() => exportResultsCSV({ ...poll, options } as Poll, result)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Download size={14} /> EXPORT CSV
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      onClick={() => exportResultPNG({ ...poll, options } as Poll, result)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <FileImage size={14} /> SHAREABLE PNG
+                    </button>
+                  </>
+                )}
+                {result?.totalVotes === 0 && (
+                  <button
+                    className="btn-secondary"
+                    onClick={() => changeStatus('live')}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <RotateCcw size={14} /> REOPEN VOTING
                   </button>
                 )}
               </>
@@ -336,10 +469,10 @@ const HostDashboard: React.FC = () => {
             <button
               className="btn-ghost"
               onClick={handlePurge}
-              style={{ marginLeft: 'auto', borderColor: 'var(--blood)', color: 'var(--blood)', fontSize: 13, padding: '8px 16px' }}
+              style={{ marginLeft: 'auto', borderColor: 'var(--blood)', color: 'var(--blood)', fontSize: 13, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               title="Permanently delete this poll from existence"
             >
-              💀 PURGE POLL
+              <Trash2 size={14} /> PURGE POLL
             </button>
           </div>
         </div>

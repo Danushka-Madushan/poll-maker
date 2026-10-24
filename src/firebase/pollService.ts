@@ -719,7 +719,8 @@ export async function getMyVote(
 export function computeResults(
   votes: Vote[],
   options: PollOption[],
-  participantCount: number
+  participantCount: number,
+  decidedWinnerId?: string
 ): PollResult {
   const counts = new Map<string, number>();
   for (const opt of options) counts.set(opt.id, 0);
@@ -742,9 +743,13 @@ export function computeResults(
     .sort((a, b) => b.count - a.count);
 
   const maxCount = tallies[0]?.count ?? 0;
-  const winners  = tallies
+  const rawWinners = tallies
     .filter((t) => t.count === maxCount && maxCount > 0)
     .map((t) => t.optionId);
+
+  const hasTie = rawWinners.length > 1;
+  const resolved = hasTie && Boolean(decidedWinnerId && rawWinners.includes(decidedWinnerId));
+  const winners = resolved ? [decidedWinnerId!] : rawWinners;
 
   return {
     pollId: options[0]?.pollId ?? '',
@@ -754,9 +759,30 @@ export function computeResults(
       ? Math.min(100, Math.round((totalVotes / participantCount) * 100))
       : (totalVotes > 0 ? 100 : 0),
     tallies,
-    isTie: winners.length > 1,
+    isTie: hasTie && !resolved,
+    isTieResolved: resolved,
+    decidedWinnerId: resolved ? decidedWinnerId : undefined,
     winners,
   };
+}
+
+/** Resolves a tie by allowing host to designate a single winner */
+export async function resolveTieWinner(
+  pollId: string,
+  _hostToken: string,
+  winnerOptionId: string
+): Promise<void> {
+  const local = getLocalPoll(pollId);
+  if (local) {
+    const updated = { ...local, decidedWinnerId: winnerOptionId };
+    saveLocalPoll(updated);
+  }
+  try {
+    const pollRef = doc(db, 'polls', pollId);
+    await updateDoc(pollRef, { decidedWinnerId: winnerOptionId });
+  } catch (err) {
+    console.debug('Firestore resolveTieWinner notice:', err);
+  }
 }
 
 /* ------------------------------------------------------------------ */

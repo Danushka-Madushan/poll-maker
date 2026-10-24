@@ -1,5 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Copy,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
+  Save,
+  Sliders,
+  Flame,
+} from 'lucide-react';
 import ImageUploader from '../components/ui/ImageUploader';
 import { useToast } from '../components/ui/ToastContext';
 import { PumpkinIcon } from '../components/ui/HalloweenIcons';
@@ -9,7 +21,6 @@ import { DEFAULT_SETTINGS } from '../types/poll';
 import { generateId, orderToLabel } from '../utils/code';
 import { saveDraft, loadDraft, clearDraft, saveRecentPoll } from '../utils/device';
 
-const MAX_OPTIONS = 12;
 const MIN_OPTIONS = 2;
 
 function newOption(order: number): DraftOption {
@@ -136,7 +147,6 @@ const PollMaker: React.FC = () => {
     opts.map((o, i) => ({ ...o, order: i, label: orderToLabel(i) }));
 
   const addOption = () => {
-    if (options.length >= MAX_OPTIONS) return;
     setOptions((prev) => relabel([...prev, newOption(prev.length)]));
   };
 
@@ -248,7 +258,9 @@ const PollMaker: React.FC = () => {
 
       {/* Header */}
       <div style={{ borderBottom: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16, background: 'var(--ink)' }}>
-        <button className="btn-ghost" onClick={() => navigate('/')} aria-label="Back to home">← BACK</button>
+        <button className="btn-ghost" onClick={() => navigate('/')} aria-label="Back to home" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <ArrowLeft size={16} /> BACK
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <PumpkinIcon size={26} color="var(--pumpkin)" />
           <div>
@@ -317,11 +329,11 @@ const PollMaker: React.FC = () => {
                   02
                 </span>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--bone)', margin: 0, textTransform: 'uppercase' }}>
-                  CONTESTANTS ({options.length}/{MAX_OPTIONS})
+                  CONTESTANTS ({options.length})
                 </h2>
               </div>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                MIN {MIN_OPTIONS} · MAX {MAX_OPTIONS}
+                MIN {MIN_OPTIONS} REQUIRED · UNLIMITED OPTIONS
               </span>
             </div>
             {errors.options && <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 12, marginBottom: 12 }}>{errors.options}</p>}
@@ -348,20 +360,28 @@ const PollMaker: React.FC = () => {
                   <div style={{ background: 'var(--void)', padding: '6px 8px', borderBottom: '2px solid var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span
-                        style={{ cursor: 'grab', userSelect: 'none', fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--ash)', lineHeight: 1 }}
+                        style={{ cursor: 'grab', userSelect: 'none', color: 'var(--ash)', display: 'flex', alignItems: 'center' }}
                         title="Drag to reorder"
                       >
-                        ⋮⋮
+                        <GripVertical size={14} />
                       </span>
                       <span style={{ background: 'var(--bone)', color: 'var(--void)', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 900, padding: '2px 6px' }}>
                         {opt.label}
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: 3 }}>
-                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11 }} onClick={() => moveOption(opt.id, -1)} disabled={idx === 0} aria-label="Move up">↑</button>
-                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11 }} onClick={() => moveOption(opt.id, 1)} disabled={idx === options.length - 1} aria-label="Move down">↓</button>
-                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11 }} onClick={() => duplicateOption(opt.id)} aria-label="Duplicate">⧉</button>
-                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11, borderColor: 'var(--blood)', color: 'var(--blood)' }} onClick={() => removeOption(opt.id)} disabled={options.length <= MIN_OPTIONS} aria-label="Remove">×</button>
+                      <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => moveOption(opt.id, -1)} disabled={idx === 0} aria-label="Move up" title="Move up">
+                        <ChevronUp size={13} />
+                      </button>
+                      <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => moveOption(opt.id, 1)} disabled={idx === options.length - 1} aria-label="Move down" title="Move down">
+                        <ChevronDown size={13} />
+                      </button>
+                      <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => duplicateOption(opt.id)} aria-label="Duplicate" title="Duplicate">
+                        <Copy size={13} />
+                      </button>
+                      <button className="btn-ghost" style={{ padding: '3px 5px', borderColor: 'var(--blood)', color: 'var(--blood)' }} onClick={() => removeOption(opt.id)} disabled={options.length <= MIN_OPTIONS} aria-label="Remove" title="Remove">
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
 
@@ -371,12 +391,19 @@ const PollMaker: React.FC = () => {
                     <div style={{ aspectRatio: '1/1', border: '2px solid var(--bone)', overflow: 'hidden' }}>
                       <ImageUploader
                         value={opt.imageDataUrl}
-                        onChange={(url) => { updateOption(opt.id, { imageDataUrl: url }); setErrors((p) => { const n = {...p}; delete n[`opt_img_${opt.id}`]; return n; }); }}
-                        onError={(msg) => addToast({ message: msg })}
+                        errorMessage={errors[`opt_img_${opt.id}`]}
+                        onChange={(url) => {
+                          updateOption(opt.id, { imageDataUrl: url });
+                          setErrors((p) => { const n = {...p}; delete n[`opt_img_${opt.id}`]; return n; });
+                        }}
+                        onError={(msg) => {
+                          setErrors((p) => ({ ...p, [`opt_img_${opt.id}`]: msg }));
+                          addToast({ message: msg });
+                        }}
                       />
                     </div>
                     {errors[`opt_img_${opt.id}`] && (
-                      <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 11, margin: 0 }}>
+                      <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 11, margin: 0, fontWeight: 700 }}>
                         {errors[`opt_img_${opt.id}`]}
                       </p>
                     )}
@@ -400,43 +427,42 @@ const PollMaker: React.FC = () => {
                 </div>
               ))}
 
-              {/* Add option button */}
-              {options.length < MAX_OPTIONS && (
-                <button
-                  onClick={addOption}
-                  aria-label="Add contestant"
-                  style={{
-                    border: '3px dashed var(--bone)',
-                    background: 'rgba(26,22,32,0.5)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    minHeight: 220,
-                    cursor: 'pointer',
-                    color: 'var(--bone)',
-                    boxShadow: '4px 4px 0 rgba(244,238,223,0.2)',
-                    transition: 'all 120ms linear',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--pumpkin)';
-                    e.currentTarget.style.color = 'var(--pumpkin)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--bone)';
-                    e.currentTarget.style.color = 'var(--bone)';
-                  }}
-                >
-                  <span style={{ fontSize: 36, lineHeight: 1, fontFamily: 'var(--font-display)' }}>+</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em', fontWeight: 700 }}>
-                    SUMMON CONTESTANT
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ash)' }}>
-                    ({MAX_OPTIONS - options.length} slots remain)
-                  </span>
-                </button>
-              )}
+              {/* Add option button (Unlimited options) */}
+              <button
+                onClick={addOption}
+                aria-label="Add contestant"
+                style={{
+                  border: '3px dashed var(--bone)',
+                  background: 'rgba(26,22,32,0.5)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  minHeight: 220,
+                  cursor: 'pointer',
+                  color: 'var(--bone)',
+                  boxShadow: '4px 4px 0 rgba(244,238,223,0.2)',
+                  transition: 'all 120ms linear',
+                  padding: 16,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--pumpkin)';
+                  e.currentTarget.style.color = 'var(--pumpkin)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--bone)';
+                  e.currentTarget.style.color = 'var(--bone)';
+                }}
+              >
+                <Plus size={36} strokeWidth={2.5} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em', fontWeight: 700 }}>
+                  SUMMON CONTESTANT
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ash)' }}>
+                  (Click to add option {orderToLabel(options.length)})
+                </span>
+              </button>
             </div>
           </div>
 
@@ -445,16 +471,18 @@ const PollMaker: React.FC = () => {
             <button
               className="btn-ghost"
               onClick={() => setSettingsOpen((v) => !v)}
-              style={{ width: '100%', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--ink)', border: '2px solid var(--bone)' }}
+              style={{ width: '100%', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--ink)', border: '2px solid var(--bone)', display: 'flex', alignItems: 'center' }}
               aria-expanded={settingsOpen}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ background: 'var(--witch)', color: 'var(--bone)', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 900, padding: '4px 8px' }}>
                   03
                 </span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 16 }}>RULES OF THE RITUAL</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Sliders size={16} color="var(--pumpkin)" /> RULES OF THE RITUAL
+                </span>
               </div>
-              <span>{settingsOpen ? '▲ COLLAPSE' : '▼ EXPAND'}</span>
+              {settingsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
 
             {settingsOpen && (
@@ -515,11 +543,21 @@ const PollMaker: React.FC = () => {
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: '3px solid var(--bone)' }}>
             <button
               className="btn-primary"
-              style={{ width: '100%', fontSize: 20, padding: '18px 24px', boxShadow: '8px 8px 0 var(--bone)' }}
+              style={{ width: '100%', fontSize: 20, padding: '18px 24px', boxShadow: '8px 8px 0 var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
               onClick={handleSubmit}
               disabled={submitting || options.length < MIN_OPTIONS}
             >
-              {submitting ? 'SAVING…' : isEditing ? '💾 SAVE CHANGES' : '🎃 CREATE POLL'}
+              {submitting ? (
+                'SAVING…'
+              ) : isEditing ? (
+                <>
+                  <Save size={20} /> SAVE CHANGES
+                </>
+              ) : (
+                <>
+                  <Flame size={20} /> CREATE POLL
+                </>
+              )}
             </button>
             {options.length < MIN_OPTIONS && (
               <p style={{ color: 'var(--ash)', fontFamily: 'var(--font-mono)', fontSize: 12, marginTop: 8, textAlign: 'center' }}>

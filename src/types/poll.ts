@@ -36,6 +36,7 @@ export interface Poll {
   closedAt?: number;
   revealedAt?: number;
   expiresAt: number;       // 24h after createdAt
+  decidedWinnerId?: string; // Set by host to resolve a tie
 }
 
 export interface Participant {
@@ -68,6 +69,8 @@ export interface PollResult {
   turnoutPercentage: number;
   tallies: VoteTally[];    // sorted descending by count
   isTie: boolean;
+  isTieResolved?: boolean;
+  decidedWinnerId?: string;
   winners: string[];       // winning optionId(s)
 }
 

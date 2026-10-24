@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus, ArrowRight, Trash2 } from 'lucide-react';
 import BatsAnimation from '../components/ui/BatsAnimation';
 import { PumpkinIcon, BatIcon, CandleIcon, SkullIcon } from '../components/ui/HalloweenIcons';
 import { useToast } from '../components/ui/ToastContext';
@@ -92,10 +93,10 @@ const Home: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, width: '100%', maxWidth: 480 }}>
         <button
           className="btn-primary"
-          style={{ fontSize: 20, padding: '16px 48px', width: '100%' }}
+          style={{ fontSize: 20, padding: '16px 48px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
           onClick={() => navigate('/create')}
         >
-          + CREATE A POLL
+          <Plus size={22} strokeWidth={2.5} /> CREATE A POLL
         </button>
 
         {/* Resume section */}
@@ -112,8 +113,8 @@ const Home: React.FC = () => {
               onKeyDown={(e) => { if (e.key === 'Enter') handleResumeCode(); }}
               style={{ flex: 1 }}
             />
-            <button className="btn-secondary" onClick={handleResumeCode} style={{ whiteSpace: 'nowrap' }}>
-              GO →
+            <button className="btn-secondary" onClick={handleResumeCode} style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              GO <ArrowRight size={16} />
             </button>
           </div>
 
@@ -127,10 +128,10 @@ const Home: React.FC = () => {
                 <button
                   className="btn-ghost"
                   onClick={handlePurgeAll}
-                  style={{ fontSize: 10, padding: '2px 6px', borderColor: 'var(--blood)', color: 'var(--blood)' }}
+                  style={{ fontSize: 10, padding: '3px 8px', borderColor: 'var(--blood)', color: 'var(--blood)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   title="Purge all past polls from Firestore and device"
                 >
-                  💀 PURGE ALL
+                  <Trash2 size={12} /> PURGE ALL
                 </button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -179,10 +180,13 @@ const Home: React.FC = () => {
                         borderColor: 'var(--blood)',
                         color: 'var(--blood)',
                         whiteSpace: 'nowrap',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
                       }}
                       title={`Purge "${poll.title}" everywhere`}
                     >
-                      ✖ PURGE
+                      <Trash2 size={12} /> PURGE
                     </button>
                   </div>
                 ))}

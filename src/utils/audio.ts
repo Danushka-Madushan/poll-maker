@@ -14,6 +14,9 @@ let muted = true; // off by default per design guide §5.7
 
 function getCtx(): AudioContext {
   if (!ctx) ctx = new AudioContext();
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
   return ctx;
 }
 

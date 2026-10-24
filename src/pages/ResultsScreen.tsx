@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { RotateCcw, Download, FileImage, Plus, Crown, Flame } from 'lucide-react';
 import BatsAnimation from '../components/ui/BatsAnimation';
 import {
   subscribeToPoll,
@@ -40,8 +41,8 @@ const ResultsScreen: React.FC = () => {
 
   const result = useMemo(() => {
     if (options.length === 0) return null;
-    return computeResults(votes, options, participants.length);
-  }, [votes, options, participants.length]);
+    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
+  }, [votes, options, participants.length, poll?.decidedWinnerId]);
 
   // Auto-start reveal sequence once results are loaded
   useEffect(() => {
@@ -117,10 +118,18 @@ const ResultsScreen: React.FC = () => {
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(18px, 4vw, 28px)', color: 'var(--bone)', margin: 0, flex: 1 }}>
           {poll.title} — RESULTS
         </h1>
-        <button className="btn-ghost" onClick={replayReveal}>↺ REPLAY</button>
-        <button className="btn-ghost" onClick={() => exportResultsCSV({ ...poll, options } as Poll, result)}>⬇ CSV</button>
-        <button className="btn-ghost" onClick={() => exportResultPNG({ ...poll, options } as Poll, result)}>⬇ SHAREABLE PNG</button>
-        <button className="btn-secondary" onClick={() => navigate('/')}>NEW POLL</button>
+        <button className="btn-ghost" onClick={replayReveal} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <RotateCcw size={14} /> REPLAY
+        </button>
+        <button className="btn-ghost" onClick={() => exportResultsCSV({ ...poll, options } as Poll, result)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Download size={14} /> CSV
+        </button>
+        <button className="btn-ghost" onClick={() => exportResultPNG({ ...poll, options } as Poll, result)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <FileImage size={14} /> SHAREABLE PNG
+        </button>
+        <button className="btn-secondary" onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Plus size={16} /> NEW POLL
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
@@ -133,8 +142,8 @@ const ResultsScreen: React.FC = () => {
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--ash)', marginBottom: 32 }}>
               THE DEAD REMAIN SILENT.
             </p>
-            <button className="btn-secondary" onClick={() => navigate('/')}>
-              CREATE NEW POLL
+            <button className="btn-secondary" onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={16} /> CREATE NEW POLL
             </button>
           </div>
         ) : (
@@ -157,8 +166,16 @@ const ResultsScreen: React.FC = () => {
                 return (
                   <div key={wId} style={{ background: 'var(--pumpkin)', border: '4px solid var(--void)', boxShadow: '8px 8px 0 var(--bone)' }}>
                     <div style={{ padding: '8px 16px', background: 'var(--void)', borderBottom: '4px solid var(--void)' }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontSize: 24, color: 'var(--pumpkin)' }}>
-                        {result.isTie ? '🔥 TIE' : '👑 WINNER'}
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: 24, color: 'var(--pumpkin)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        {result.isTie ? (
+                          <>
+                            <Flame size={22} /> TIE
+                          </>
+                        ) : (
+                          <>
+                            <Crown size={22} /> WINNER
+                          </>
+                        )}
                       </span>
                     </div>
                     <img src={opt.imageUrl} alt={opt.title} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { Maximize2, Minimize2, Volume2, VolumeX, Crown, Flame } from 'lucide-react';
 import {
   subscribeToPoll,
   subscribeToOptions,
@@ -9,7 +10,7 @@ import {
   computeResults,
 } from '../firebase/pollService';
 import type { Poll, PollOption, Participant, Vote } from '../types/poll';
-import { playCreak, playSting, playTick, isMuted } from '../utils/audio';
+import { playCreak, playSting, playTick, isMuted, toggleMuted } from '../utils/audio';
 import { formatJoinCode } from '../utils/code';
 
 /** Big Screen display — designed for TV/projector, no host controls */
@@ -20,9 +21,39 @@ const BigScreen: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [votes, setVotes]         = useState<Vote[]>([]);
   const [revealStep, setRevealStep] = useState(-1); // -1 = not started, 0 = black, 1+ = animating
+  const [isFullscreen, setIsFullscreen] = useState(Boolean(typeof document !== 'undefined' && document.fullscreenElement));
+  const [muted, setMutedState] = useState(isMuted());
   const prevStatus = useRef<string>('');
 
   const joinUrl = `${window.location.origin}/join/${poll?.joinCode ?? ''}`;
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  const toggleAudio = () => {
+    const m = toggleMuted();
+    setMutedState(m);
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.key === 'f' || e.key === 'F') && document.activeElement?.tagName !== 'INPUT') {
+        toggleFullscreen();
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, []);
 
   // Subscriptions
   useEffect(() => {
@@ -53,8 +84,8 @@ const BigScreen: React.FC = () => {
   // Compute results
   const result = useMemo(() => {
     if (options.length === 0) return null;
-    return computeResults(votes, options, participants.length);
-  }, [votes, options, participants.length]);
+    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
+  }, [votes, options, participants.length, poll?.decidedWinnerId]);
 
   // Reveal sequence: reveal each option 1 per second, winner last
   useEffect(() => {
@@ -84,10 +115,33 @@ const BigScreen: React.FC = () => {
     );
   }
 
+  const projectorControls = (
+    <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 999, display: 'flex', gap: 8 }}>
+      <button
+        className="btn-ghost"
+        onClick={toggleAudio}
+        title={muted ? 'Unmute audio' : 'Mute audio'}
+        style={{ background: 'var(--ink)', padding: '8px 12px', border: '2px solid var(--bone)', display: 'inline-flex', alignItems: 'center' }}
+      >
+        {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+      </button>
+      <button
+        className="btn-ghost"
+        onClick={toggleFullscreen}
+        title="Toggle Fullscreen (F)"
+        style={{ background: 'var(--ink)', padding: '8px 12px', border: '2px solid var(--bone)', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 12 }}
+      >
+        {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+        <span>{isFullscreen ? 'EXIT' : 'FULLSCREEN'}</span>
+      </button>
+    </div>
+  );
+
   /* ---- LOBBY STATE ---- */
   if (poll.status === 'lobby') {
     return (
-      <div className="display-screen" style={{ flexDirection: 'row' }}>
+      <div className="display-screen" style={{ flexDirection: 'row', position: 'relative' }}>
+        {projectorControls}
         {/* Left — QR */}
         <div style={{ flex: '0 0 55%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, borderRight: '4px solid var(--bone)' }}>
           <div className="qr-container" style={{ padding: 24 }}>
@@ -138,7 +192,8 @@ const BigScreen: React.FC = () => {
   /* ---- LIVE STATE ---- */
   if (poll.status === 'live') {
     return (
-      <div className="display-screen" style={{ padding: 0, gap: 0 }}>
+      <div className="display-screen" style={{ padding: 0, gap: 0, position: 'relative' }}>
+        {projectorControls}
         {/* Hazard Stripes Banner on Live */}
         <div className="hazard-stripes" style={{ height: 14, width: '100%' }} />
 
@@ -180,7 +235,8 @@ const BigScreen: React.FC = () => {
   /* ---- CLOSED STATE ---- */
   if (poll.status === 'closed') {
     return (
-      <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+      <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', gap: 24, position: 'relative' }}>
+        {projectorControls}
         <div style={{ textAlign: 'center' }}>
           <div className="hazard-stripes" style={{ height: 16, width: '100%', marginBottom: 48 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 6vw, 96px)', color: 'var(--bone)', lineHeight: 0.9 }}>
@@ -199,7 +255,8 @@ const BigScreen: React.FC = () => {
   if (poll.status === 'revealed' && result) {
     if (result.totalVotes === 0) {
       return (
-        <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', gap: 24, padding: 48 }}>
+        <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', gap: 24, padding: 48, position: 'relative' }}>
+          {projectorControls}
           <div className="hazard-stripes" style={{ height: 20, width: '100%', maxWidth: 800, marginBottom: 32 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(44px, 8vw, 110px)', color: 'var(--pumpkin)', textAlign: 'center', lineHeight: 0.9 }}>
             NOBODY VOTED.<br />SPOOKY.
@@ -218,7 +275,8 @@ const BigScreen: React.FC = () => {
     const winnerVisible = reducedMotion || revealStep > result.tallies.length;
 
     return (
-      <div className="display-screen" style={{ padding: 32, gap: 0, overflow: 'hidden' }}>
+      <div className="display-screen" style={{ padding: 32, gap: 0, overflow: 'hidden', position: 'relative' }}>
+        {projectorControls}
         {/* Reveal step 0 — BLACK + "AND THE WINNER IS…" */}
         {!reducedMotion && revealStep === 0 && (
           <div style={{ position: 'fixed', inset: 0, background: 'var(--void)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
@@ -247,8 +305,16 @@ const BigScreen: React.FC = () => {
                 );
               })}
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 64px)', letterSpacing: '0.04em' }}>
-              {result.isTie ? '🔥 TIE 🔥' : '👑 WINNER'}
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 64px)', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 12 }}>
+              {result.isTie ? (
+                <>
+                  <Flame size={40} /> TIE
+                </>
+              ) : (
+                <>
+                  <Crown size={40} /> WINNER
+                </>
+              )}
             </div>
           </div>
         )}

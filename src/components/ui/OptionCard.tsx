@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Check } from 'lucide-react';
 import type { PollOption } from '../../types/poll';
 
 interface OptionCardProps {
@@ -68,7 +69,9 @@ const OptionCard: React.FC<OptionCardProps> = ({
         <div className="option-title-bar">{option.title}</div>
 
         {selected && (
-          <div className="check-block" aria-hidden="true">✓</div>
+          <div className="check-block" aria-hidden="true">
+            <Check size={14} strokeWidth={3} />
+          </div>
         )}
 
         {/* Host-only vote count overlay */}

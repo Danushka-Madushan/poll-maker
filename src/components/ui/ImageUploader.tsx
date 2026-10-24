@@ -1,10 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { Upload, RefreshCw, AlertCircle } from 'lucide-react';
 import { cropToSquare, fileToDataUrl, validateImageFile } from '../../utils/image';
 
 interface ImageUploaderProps {
   value?: string;        // current data URL
   onChange: (dataUrl: string) => void;
   onError?: (msg: string) => void;
+  errorMessage?: string;
   disabled?: boolean;
 }
 
@@ -12,7 +14,7 @@ interface ImageUploaderProps {
  * Click / drag-and-drop image uploader with automatic 1:1 square crop.
  * Shows existing image or an empty dashed placeholder.
  */
-const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, onError, disabled }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, onError, errorMessage, disabled }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -48,9 +50,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, onError,
     <div
       className={`option-card-empty ${dragOver ? 'border-pumpkin' : ''}`}
       style={{
-        border: dragOver ? '3px solid var(--pumpkin)' : undefined,
+        border: errorMessage ? '3px solid var(--blood)' : dragOver ? '3px solid var(--pumpkin)' : undefined,
         position: 'relative',
         overflow: 'hidden',
+        background: errorMessage ? 'rgba(224, 40, 60, 0.08)' : undefined,
       }}
       onClick={() => !disabled && inputRef.current?.click()}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -71,9 +74,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, onError,
       />
 
       {loading ? (
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)' }}>
-          PROCESSING…
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <RefreshCw size={24} className="animate-spin text-[var(--pumpkin)]" />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)' }}>
+            CROPPING…
+          </span>
+        </div>
       ) : value ? (
         <>
           <img
@@ -84,13 +90,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, onError,
           {!disabled && (
             <div style={{
               position: 'absolute', inset: 0,
-              background: 'rgba(13,11,16,0.6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(13,11,16,0.65)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               opacity: 0, transition: 'opacity 120ms',
             }}
               className="img-hover-overlay"
             >
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone)' }}>
+              <Upload size={16} color="var(--bone)" />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone)', fontWeight: 700 }}>
                 CHANGE
               </span>
             </div>
@@ -98,14 +105,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, onError,
         </>
       ) : (
         <>
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-            <rect x="14" y="4" width="4" height="16" />
-            <rect x="6" y="12" width="20" height="4" />
-            <rect x="4" y="24" width="24" height="4" />
-          </svg>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'center', lineHeight: 1.4 }}>
-            DROP IMAGE<br />OR CLICK
-          </span>
+          {errorMessage ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '0 8px', textAlign: 'center' }}>
+              <AlertCircle size={28} color="var(--blood)" />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--blood)', lineHeight: 1.3, fontWeight: 700, textTransform: 'uppercase' }}>
+                {errorMessage}
+              </span>
+            </div>
+          ) : (
+            <>
+              <Upload size={28} strokeWidth={2.5} color="var(--ash)" />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'center', lineHeight: 1.4, color: 'var(--bone)' }}>
+                DROP IMAGE<br />OR CLICK
+              </span>
+            </>
+          )}
         </>
       )}
 

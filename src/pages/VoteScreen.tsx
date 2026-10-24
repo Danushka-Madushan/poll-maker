@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Wifi, WifiOff, AlertTriangle, RotateCcw, Flame } from 'lucide-react';
 import OptionCard from '../components/ui/OptionCard';
 import BatsAnimation from '../components/ui/BatsAnimation';
 import { GhostIcon, SkullIcon, CandleIcon } from '../components/ui/HalloweenIcons';
@@ -41,6 +42,28 @@ const VoteScreen: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [casting, setCasting]   = useState(false);
   const [joined, setJoined]     = useState(false);
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
+  const [justReconnected, setJustReconnected] = useState(false);
+
+  // Monitor network status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      setJustReconnected(true);
+      const t = setTimeout(() => setJustReconnected(false), 2500);
+      return () => clearTimeout(t);
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      setJustReconnected(false);
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Ensure participant is joined
   useEffect(() => {
@@ -147,10 +170,26 @@ const VoteScreen: React.FC = () => {
 
   if (!pollId) return null;
 
+  const networkBanner = (
+    <>
+      {isOffline && (
+        <div style={{ background: 'var(--blood)', color: 'var(--bone)', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, borderBottom: '2px solid var(--void)', position: 'sticky', top: 0, zIndex: 999 }}>
+          <WifiOff size={16} /> ⚠️ DISCONNECTED · RECONNECTING TO SPIRITS… (VOTE SAFE)
+        </div>
+      )}
+      {!isOffline && justReconnected && (
+        <div style={{ background: 'var(--toxic)', color: 'var(--void)', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 900, borderBottom: '2px solid var(--void)', position: 'sticky', top: 0, zIndex: 999 }}>
+          <Wifi size={16} /> ✦ RECONNECTED TO SPIRITS!
+        </div>
+      )}
+    </>
+  );
+
   /* ---- WAITING STATE ---- */
   if (poll?.status === 'lobby' || (isWaiting && !poll)) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--void)', flexDirection: 'column', gap: 24, padding: 24, position: 'relative', overflow: 'hidden' }}>
+        {networkBanner}
         <BatsAnimation />
         <div style={{ border: '4px solid var(--bone)', background: 'var(--ink)', padding: 32, textAlign: 'center', maxWidth: 380, width: '100%', boxShadow: '8px 8px 0 var(--bone)', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
@@ -175,6 +214,7 @@ const VoteScreen: React.FC = () => {
   if (poll?.status === 'closed' || isClosed) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--void)', flexDirection: 'column', gap: 16, padding: 24, position: 'relative', overflow: 'hidden' }}>
+        {networkBanner}
         <BatsAnimation />
         <div style={{ border: '4px solid var(--blood)', background: 'var(--ink)', padding: 32, textAlign: 'center', maxWidth: 380, width: '100%', boxShadow: '8px 8px 0 var(--blood)', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
@@ -197,6 +237,7 @@ const VoteScreen: React.FC = () => {
     const votedOptions = options.filter((o) => myVote.optionIds.includes(o.id));
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--void)', position: 'relative', overflow: 'hidden' }}>
+        {networkBanner}
         <BatsAnimation />
         {/* Top hazard stripes */}
         <div className="hazard-stripes" style={{ height: 4, width: '100%' }} />
@@ -231,9 +272,9 @@ const VoteScreen: React.FC = () => {
               <button
                 className="btn-ghost"
                 onClick={() => { setMyVote(null); setSelected(myVote.optionIds); }}
-                style={{ width: '100%' }}
+                style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                ↺ CHANGE VOTE
+                <RotateCcw size={16} /> CHANGE VOTE
               </button>
             )}
           </div>
@@ -247,6 +288,7 @@ const VoteScreen: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--void)', position: 'relative', overflow: 'hidden' }}>
+      {networkBanner}
       <BatsAnimation />
       {/* Top accent hazard stripes */}
       <div className="hazard-stripes" style={{ height: 4, width: '100%' }} />
@@ -301,11 +343,29 @@ const VoteScreen: React.FC = () => {
       <div style={{ position: 'sticky', bottom: 0, zIndex: 20, borderTop: '3px solid var(--bone)', background: 'var(--ink)', padding: 12 }}>
         <button
           className="btn-primary"
-          style={{ width: '100%', fontSize: 20, padding: '16px 24px', boxShadow: selected.length > 0 ? '6px 6px 0 var(--bone)' : 'none' }}
+          style={{ width: '100%', fontSize: 20, padding: '16px 24px', boxShadow: selected.length > 0 ? '6px 6px 0 var(--bone)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
           onClick={handleCast}
-          disabled={selected.length === 0 || casting}
+          disabled={selected.length === 0 || casting || isOffline}
         >
-          {casting ? 'CASTING…' : selected.length === 0 ? 'CHOOSE A CONTESTANT' : selected.length > 1 ? `🎃 CAST ${selected.length} VOTES` : '🎃 CAST YOUR VOTE'}
+          {isOffline ? (
+            <>
+              <WifiOff size={20} /> RECONNECTING TO SPIRITS…
+            </>
+          ) : casting ? (
+            <>
+              <AlertTriangle size={20} className="animate-spin" /> CASTING VOTE…
+            </>
+          ) : selected.length === 0 ? (
+            'CHOOSE A CONTESTANT'
+          ) : selected.length > 1 ? (
+            <>
+              <Flame size={20} /> CAST {selected.length} VOTES
+            </>
+          ) : (
+            <>
+              <Flame size={20} /> CAST YOUR VOTE
+            </>
+          )}
         </button>
       </div>
     </div>
