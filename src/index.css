@@ -662,7 +662,7 @@ a:hover {
 }
 
 /* ============================================================
-   SCREEN WIPE TRANSITION
+   SCREEN WIPE & STAGE TRANSITIONS
    ============================================================ */
 .wipe-enter {
   animation: wipe-in 240ms steps(4) forwards;
@@ -670,6 +670,48 @@ a:hover {
 @keyframes wipe-in {
   from { transform: translateX(-100%); }
   to   { transform: translateX(0);     }
+}
+
+/* Mechanical brutalist stage transition banner */
+.stage-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: var(--void);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  animation: stageHardWipe 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes stageHardWipe {
+  0% {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
+  15% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  82% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(100% 0 0 0);
+    opacity: 0;
+  }
+}
+
+/* Podium & Ticker Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* ============================================================

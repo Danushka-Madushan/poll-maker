@@ -23,6 +23,11 @@ const BigScreen: React.FC = () => {
   const [revealStep, setRevealStep] = useState(-1); // -1 = not started, 0 = black, 1+ = animating
   const [isFullscreen, setIsFullscreen] = useState(Boolean(typeof document !== 'undefined' && document.fullscreenElement));
   const [muted, setMutedState] = useState(isMuted());
+  const [transitionOverlay, setTransitionOverlay] = useState<{
+    title: string;
+    subtitle: string;
+    accent: string;
+  } | null>(null);
   const prevStatus = useRef<string>('');
 
   const joinUrl = `${window.location.origin}/join/${poll?.joinCode ?? ''}`;
@@ -55,12 +60,36 @@ const BigScreen: React.FC = () => {
     };
   }, []);
 
-  // Subscriptions
+  // Compute results
+  const result = useMemo(() => {
+    if (options.length === 0) return null;
+    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
+  }, [votes, options, participants.length, poll?.decidedWinnerId]);
+
+  // Real-time Subscriptions
   useEffect(() => {
     if (!pollId) return;
     const u1 = subscribeToPoll(
       pollId,
       (p) => {
+        if (prevStatus.current) {
+          if (prevStatus.current === 'lobby' && p.status === 'live') {
+            setTransitionOverlay({
+              title: 'THE HAUNT COMMENCES',
+              subtitle: 'CAST YOUR HEXES · VOTING IS NOW LIVE',
+              accent: 'var(--toxic)',
+            });
+            setTimeout(() => setTransitionOverlay(null), 1800);
+          } else if (prevStatus.current === 'live' && p.status === 'closed') {
+            setTransitionOverlay({
+              title: 'VOTING CONCLUDED',
+              subtitle: 'THE DEAD ARE COUNTING BALLOTS…',
+              accent: 'var(--blood)',
+            });
+            setTimeout(() => setTransitionOverlay(null), 1800);
+          }
+        }
+
         // Trigger reveal sequence when status changes to 'revealed'
         if (prevStatus.current !== 'revealed' && p.status === 'revealed') {
           const isReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -81,26 +110,20 @@ const BigScreen: React.FC = () => {
     return () => { u1(); u2(); u3(); u4(); };
   }, [pollId]);
 
-  // Compute results
-  const result = useMemo(() => {
-    if (options.length === 0) return null;
-    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
-  }, [votes, options, participants.length, poll?.decidedWinnerId]);
-
-  // Reveal sequence: reveal each option 1 per second, winner last
+  // Reveal sequence: reveal 3rd place, then 2nd place, then Champion last
   useEffect(() => {
     if (revealStep < 0 || revealStep >= 999 || !result) return;
 
-    const totalSteps = result.tallies.length + 1; // +1 for "AND THE WINNER IS…" beat
+    const podiumSteps = Math.min(3, result.tallies.length);
 
-    if (revealStep < totalSteps) {
+    if (revealStep < podiumSteps) {
       if (!isMuted() && revealStep > 0) playTick();
-      const t = setTimeout(() => setRevealStep((s) => s + 1), revealStep === 0 ? 1500 : 900);
+      const delay = revealStep === 0 ? 1600 : 1200;
+      const t = setTimeout(() => setRevealStep((s) => s + 1), delay);
       return () => clearTimeout(t);
     }
 
-    // Final step: play sting
-    if (revealStep === totalSteps && !isMuted()) {
+    if (revealStep === podiumSteps && !isMuted()) {
       setTimeout(() => playSting(), 200);
     }
   }, [revealStep, result]);
@@ -137,11 +160,25 @@ const BigScreen: React.FC = () => {
     </div>
   );
 
+  const transitionBanner = transitionOverlay && (
+    <div className="stage-transition-overlay" style={{ border: `4px solid ${transitionOverlay.accent}` }}>
+      <div className="hazard-stripes" style={{ height: 16, width: '100%', maxWidth: 700, marginBottom: 24 }} />
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 6vw, 84px)', color: transitionOverlay.accent, textAlign: 'center', lineHeight: 0.95, textTransform: 'uppercase' }}>
+        {transitionOverlay.title}
+      </h1>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(18px, 3vw, 32px)', color: 'var(--bone)', textAlign: 'center', marginTop: 18, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        {transitionOverlay.subtitle}
+      </p>
+      <div className="hazard-stripes" style={{ height: 16, width: '100%', maxWidth: 700, marginTop: 24 }} />
+    </div>
+  );
+
   /* ---- LOBBY STATE ---- */
   if (poll.status === 'lobby') {
     return (
       <div className="display-screen" style={{ flexDirection: 'row', position: 'relative' }}>
         {projectorControls}
+        {transitionBanner}
         {/* Left — QR */}
         <div style={{ flex: '0 0 55%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, borderRight: '4px solid var(--bone)' }}>
           <div className="qr-container" style={{ padding: 24 }}>
@@ -194,6 +231,7 @@ const BigScreen: React.FC = () => {
     return (
       <div className="display-screen" style={{ padding: 0, gap: 0, position: 'relative' }}>
         {projectorControls}
+        {transitionBanner}
         {/* Hazard Stripes Banner on Live */}
         <div className="hazard-stripes" style={{ height: 14, width: '100%' }} />
 
@@ -237,6 +275,7 @@ const BigScreen: React.FC = () => {
     return (
       <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', gap: 24, position: 'relative' }}>
         {projectorControls}
+        {transitionBanner}
         <div style={{ textAlign: 'center' }}>
           <div className="hazard-stripes" style={{ height: 16, width: '100%', marginBottom: 48 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 6vw, 96px)', color: 'var(--bone)', lineHeight: 0.9 }}>
@@ -251,7 +290,7 @@ const BigScreen: React.FC = () => {
     );
   }
 
-  /* ---- REVEALED STATE ---- */
+  /* ---- REVEALED STATE (SPOOKY TOP 3 PODIUM) ---- */
   if (poll.status === 'revealed' && result) {
     if (result.totalVotes === 0) {
       return (
@@ -269,89 +308,315 @@ const BigScreen: React.FC = () => {
       );
     }
 
-    const sortedByRankAsc = [...result.tallies].reverse(); // last to first for reveal
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const visibleCount  = reducedMotion ? sortedByRankAsc.length : Math.max(0, revealStep - 1);
-    const winnerVisible = reducedMotion || revealStep > result.tallies.length;
+    const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const podiumCount = Math.min(3, result.tallies.length);
+    const isThirdRevealed = reducedMotion || revealStep >= 1;
+    const isSecondRevealed = reducedMotion || (podiumCount === 3 ? revealStep >= 2 : revealStep >= 1);
+    const isFirstRevealed = reducedMotion || revealStep >= podiumCount;
+
+    const tally1 = result.tallies[0];
+    const opt1 = tally1 ? options.find((o) => o.id === tally1.optionId) : null;
+
+    const tally2 = result.tallies[1];
+    const opt2 = tally2 ? options.find((o) => o.id === tally2.optionId) : null;
+
+    const tally3 = result.tallies[2];
+    const opt3 = tally3 ? options.find((o) => o.id === tally3.optionId) : null;
+
+    const runners = result.tallies.slice(3);
+
+    // Shrouded slot placeholder
+    const renderShrouded = (badge: string, heightPct: string) => (
+      <div
+        style={{
+          flex: '1 1 280px',
+          maxWidth: 380,
+          height: heightPct,
+          background: 'var(--ink)',
+          border: '3px dashed var(--ash)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          textAlign: 'center',
+          gap: 16,
+        }}
+      >
+        <div className="hazard-stripes" style={{ height: 10, width: '80%' }} />
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(40px, 5vw, 64px)', color: 'var(--ash)' }}>☠</span>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(14px, 1.6vw, 20px)', color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
+          {badge}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="blink-dot" style={{ background: 'var(--pumpkin)' }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--pumpkin)' }}>UNMASKING…</span>
+        </div>
+      </div>
+    );
 
     return (
-      <div className="display-screen" style={{ padding: 32, gap: 0, overflow: 'hidden', position: 'relative' }}>
+      <div className="display-screen" style={{ padding: 0, gap: 0, overflow: 'hidden', position: 'relative' }}>
         {projectorControls}
-        {/* Reveal step 0 — BLACK + "AND THE WINNER IS…" */}
+
+        {/* Reveal Step 0 — Blackout + "AND THE WINNER IS…" */}
         {!reducedMotion && revealStep === 0 && (
-          <div style={{ position: 'fixed', inset: 0, background: 'var(--void)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(40px, 7vw, 100px)', color: 'var(--bone)', textAlign: 'center', lineHeight: 0.92 }}>
+          <div style={{ position: 'fixed', inset: 0, background: 'var(--void)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, flexDirection: 'column', gap: 24 }}>
+            <div className="hazard-stripes" style={{ height: 16, width: '60%' }} />
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(44px, 8vw, 110px)', color: 'var(--bone)', textAlign: 'center', lineHeight: 0.92, textTransform: 'uppercase' }}>
               AND THE<br /><span style={{ color: 'var(--pumpkin)' }}>WINNER IS…</span>
             </h1>
+            <div className="hazard-stripes" style={{ height: 16, width: '60%' }} />
           </div>
         )}
 
-        {/* Winner banner */}
-        {winnerVisible && result.winners.length > 0 && (
-          <div style={{ background: 'var(--pumpkin)', color: 'var(--void)', borderBottom: '4px solid var(--void)', padding: '16px 32px', display: 'flex', alignItems: 'center', gap: 24 }}>
-            <div style={{ display: 'flex', gap: 16, flex: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-              {result.winners.map((wId) => {
-                const opt = options.find((o) => o.id === wId);
-                if (!opt) return null;
-                const tally = result.tallies.find((t) => t.optionId === wId);
-                return (
-                  <div key={wId} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <img src={opt.imageUrl} alt={opt.title} style={{ width: 80, height: 80, objectFit: 'cover', border: '3px solid var(--void)' }} />
-                    <div>
-                      <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 48px)', margin: 0, lineHeight: 0.9 }}>{opt.title}</p>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 18, margin: '4px 0 0' }}>{tally?.count} VOTES · {tally?.percentage}%</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 5vw, 64px)', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 12 }}>
-              {result.isTie ? (
-                <>
-                  <Flame size={40} /> TIE
-                </>
-              ) : (
-                <>
-                  <Crown size={40} /> WINNER
-                </>
-              )}
-            </div>
+        {/* Top Header */}
+        <div style={{ height: 64, borderBottom: '3px solid var(--bone)', background: 'var(--ink)', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px, 3vw, 36px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase' }}>
+            {poll.title}
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span className="blink-dot" style={{ background: 'var(--pumpkin)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--pumpkin)', letterSpacing: '0.1em', fontWeight: 700 }}>
+              ✦ THE SPOOKY PODIUM ✦
+            </span>
           </div>
-        )}
-
-        {/* Ranking bars — revealed bottom to top, 1/sec */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, padding: '16px 0', overflowY: 'auto' }}>
-          {sortedByRankAsc.slice(0, visibleCount).map((tally) => {
-            const opt = options.find((o) => o.id === tally.optionId);
-            const isWinner = result.winners.includes(tally.optionId);
-            return (
-              <div key={tally.optionId} className="result-bar" style={{ height: 64 }}>
-                <div
-                  className={`result-bar-fill`}
-                  style={{ width: `${tally.percentage}%`, background: isWinner ? 'var(--pumpkin)' : 'var(--bone)', transition: 'width 800ms linear' }}
-                />
-                <span className="result-bar-label" style={{ fontSize: 'clamp(14px, 2vw, 20px)' }}>
-                  {isWinner && '★ '}{opt?.label} — {opt?.title}
-                </span>
-                <span className="result-bar-pct" style={{ fontSize: 'clamp(14px, 2vw, 20px)' }}>
-                  {tally.count} ({tally.percentage}%)
-                </span>
-              </div>
-            );
-          })}
         </div>
 
+        {/* Podium Layout */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 'clamp(12px, 2vw, 32px)', padding: '16px 24px 20px', minHeight: 0, overflow: 'hidden' }}>
+
+          {/* 2nd Place Column (Left) */}
+          {podiumCount >= 2 && (
+            isSecondRevealed && opt2 && tally2 ? (
+              <div
+                style={{
+                  flex: '1 1 280px',
+                  maxWidth: 380,
+                  height: '82%',
+                  background: 'var(--ink)',
+                  border: '4px solid var(--bone)',
+                  boxShadow: '6px 6px 0 var(--bone)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                <div style={{ background: 'var(--bone)', color: 'var(--void)', padding: '10px 14px', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 'clamp(14px, 1.6vw, 20px)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  🥈 2ND PLACE · RUNNER-UP
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 20px', minHeight: 0 }}>
+                  <div style={{ width: '100%', display: 'flex', justifyContent: 'center', minHeight: 0 }}>
+                    <img
+                      src={opt2.imageUrl}
+                      alt={opt2.title}
+                      style={{
+                        width: 'clamp(110px, 13vw, 180px)',
+                        aspectRatio: '1/1',
+                        objectFit: 'cover',
+                        border: '3px solid var(--bone)',
+                        display: 'block',
+                      }}
+                    />
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: 12 }}>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px, 2.4vw, 32px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
+                      {opt2.title}
+                    </h2>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ash)', margin: '4px 0 0' }}>
+                      CONTESTANT {opt2.label}
+                    </p>
+                  </div>
+                  <div style={{ background: 'var(--void)', border: '2px solid var(--bone)', padding: '8px 16px', width: '90%', textAlign: 'center', marginTop: 12 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(18px, 2vw, 26px)', color: 'var(--bone)', fontWeight: 900 }}>
+                      {tally2.count} VOTES ({tally2.percentage}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              renderShrouded('🥈 2ND PLACE', '82%')
+            )
+          )}
+
+          {/* 1st Place Column (Center / Supreme Champion) */}
+          {isFirstRevealed && opt1 && tally1 ? (
+            <div
+              style={{
+                flex: '1 1 340px',
+                maxWidth: 480,
+                height: '96%',
+                background: 'var(--ink)',
+                border: '4px solid var(--pumpkin)',
+                boxShadow: '8px 8px 0 var(--pumpkin)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                zIndex: 2,
+              }}
+            >
+              <div style={{ background: 'var(--pumpkin)', color: 'var(--void)', padding: '12px 16px', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 'clamp(16px, 2vw, 24px)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {result.winners.length > 1 ? (
+                  <>
+                    <Flame size={22} /> DEADLOCK · CO-CHAMPIONS
+                  </>
+                ) : (
+                  <>
+                    <Crown size={22} /> 👑 SUPREME CHAMPION
+                  </>
+                )}
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 22px', minHeight: 0 }}>
+                {/* Images (handles single winner or multiple co-winners) */}
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 12, minHeight: 0 }}>
+                  {result.winners.slice(0, 2).map((wId) => {
+                    const opt = options.find((o) => o.id === wId);
+                    if (!opt) return null;
+                    return (
+                      <img
+                        key={wId}
+                        src={opt.imageUrl}
+                        alt={opt.title}
+                        style={{
+                          width: result.winners.length > 1 ? 'clamp(90px, 11vw, 150px)' : 'clamp(140px, 17vw, 240px)',
+                          aspectRatio: '1/1',
+                          objectFit: 'cover',
+                          border: '4px solid var(--pumpkin)',
+                          boxShadow: '4px 4px 0 var(--pumpkin)',
+                          display: 'block',
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div style={{ textAlign: 'center', marginTop: 12 }}>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3.4vw, 44px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
+                    {result.winners.length > 1
+                      ? result.winners.map((wId) => options.find((o) => o.id === wId)?.title).join(' & ')
+                      : opt1.title}
+                  </h2>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--pumpkin)', margin: '6px 0 0', fontWeight: 700 }}>
+                    {result.winners.length > 1 ? 'CO-WINNERS OF THE NIGHT' : `CONTESTANT ${opt1.label}`}
+                  </p>
+                </div>
+
+                <div style={{ background: 'var(--void)', border: '3px solid var(--pumpkin)', padding: '10px 20px', width: '92%', textAlign: 'center', marginTop: 14 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(22px, 2.6vw, 36px)', color: 'var(--toxic)', fontWeight: 900 }}>
+                    {tally1.count} VOTES · {tally1.percentage}% SHARE
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            renderShrouded('👑 1ST PLACE', '96%')
+          )}
+
+          {/* 3rd Place Column (Right) */}
+          {podiumCount >= 3 && (
+            isThirdRevealed && opt3 && tally3 ? (
+              <div
+                style={{
+                  flex: '1 1 260px',
+                  maxWidth: 340,
+                  height: '70%',
+                  background: 'var(--ink)',
+                  border: '3px solid var(--ash)',
+                  boxShadow: '6px 6px 0 var(--ash)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                <div style={{ background: 'var(--ash)', color: 'var(--void)', padding: '8px 12px', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 'clamp(13px, 1.4vw, 18px)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  🥉 3RD PLACE
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '14px 14px 18px', minHeight: 0 }}>
+                  <div style={{ width: '100%', display: 'flex', justifyContent: 'center', minHeight: 0 }}>
+                    <img
+                      src={opt3.imageUrl}
+                      alt={opt3.title}
+                      style={{
+                        width: 'clamp(90px, 11vw, 140px)',
+                        aspectRatio: '1/1',
+                        objectFit: 'cover',
+                        border: '3px solid var(--ash)',
+                        display: 'block',
+                      }}
+                    />
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: 10 }}>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(18px, 2vw, 26px)', color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
+                      {opt3.title}
+                    </h2>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', margin: '4px 0 0' }}>
+                      CONTESTANT {opt3.label}
+                    </p>
+                  </div>
+                  <div style={{ background: 'var(--void)', border: '2px solid var(--ash)', padding: '6px 12px', width: '90%', textAlign: 'center', marginTop: 10 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(16px, 1.8vw, 22px)', color: 'var(--pumpkin)', fontWeight: 900 }}>
+                      {tally3.count} VOTES ({tally3.percentage}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              renderShrouded('🥉 3RD PLACE', '70%')
+            )
+          )}
+        </div>
+
+        {/* Runners Ticker Bar (4th Place and below) */}
+        {isFirstRevealed && runners.length > 0 && (
+          <div
+            className="no-scrollbar"
+            style={{
+              height: 52,
+              background: 'var(--ink)',
+              borderTop: '3px solid var(--bone)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              padding: '0 24px',
+              overflowX: 'auto',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--pumpkin)', letterSpacing: '0.08em', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>✦</span> RUNNERS IN THE SHADOWS:
+            </span>
+            {runners.map((t, idx) => {
+              const opt = options.find((o) => o.id === t.optionId);
+              return (
+                <span
+                  key={t.optionId}
+                  style={{
+                    background: 'var(--void)',
+                    border: '2px solid var(--ash)',
+                    padding: '4px 12px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 13,
+                    color: 'var(--bone)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ color: 'var(--ash)', fontWeight: 700 }}>#{idx + 4}</span>
+                  <span style={{ textTransform: 'uppercase' }}>{opt?.title}</span>
+                  <span style={{ color: 'var(--toxic)', fontWeight: 700 }}>{t.count}v ({t.percentage}%)</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
+
         {/* Footer */}
-        <div style={{ borderTop: '3px solid var(--bone)', padding: '12px 0', display: 'flex', gap: 32 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: 'var(--ash)' }}>
-            {result.totalVotes} VOTES CAST
-          </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: 'var(--ash)' }}>
-            {result.totalParticipants} PARTICIPANTS
-          </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: 'var(--ash)' }}>
-            {result.turnoutPercentage}% TURNOUT
-          </span>
+        <div style={{ height: 44, borderTop: '3px solid var(--bone)', background: 'var(--void)', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ash)' }}>
+          <span>{result.totalVotes} TOTAL VOTES CAST</span>
+          <span>{result.totalParticipants} PARTICIPANTS</span>
+          <span>{result.turnoutPercentage}% TURNOUT</span>
         </div>
       </div>
     );

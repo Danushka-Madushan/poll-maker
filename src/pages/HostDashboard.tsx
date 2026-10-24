@@ -20,6 +20,7 @@ import {
 import StatusChip from '../components/ui/StatusChip';
 import HoldButton from '../components/ui/HoldButton';
 import OptionCard from '../components/ui/OptionCard';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import { useToast } from '../components/ui/ToastContext';
 import {
   subscribeToPoll,
@@ -53,6 +54,17 @@ const HostDashboard: React.FC = () => {
   const [muted, setMuted]             = useState(isMuted());
   const [loading, setLoading]         = useState(true);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Real-time subscriptions
   useEffect(() => {
@@ -102,19 +114,24 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  const handlePurge = async () => {
+  const handlePurge = () => {
     if (!pollId) return;
-    const confirmed = window.confirm(
-      'ARE YOU ABSOLUTELY SURE?\n\nThis will permanently purge this poll, all options, and all cast votes from Firestore and your device. This cannot be undone.'
-    );
-    if (!confirmed) return;
-    try {
-      await purgePoll(pollId, hostToken);
-      addToast({ message: 'Poll permanently purged from existence.' });
-      navigate('/');
-    } catch (err) {
-      addToast({ message: `Failed to purge poll: ${(err as Error).message}` });
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: `PURGE "${poll?.title?.toUpperCase() || 'THIS POLL'}"?`,
+      message:
+        'This will permanently destroy this poll, all options, and all cast votes from Cloud Firestore and this device. This cannot be undone.',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await purgePoll(pollId, hostToken);
+          addToast({ message: 'Poll permanently purged from existence.' });
+          navigate('/');
+        } catch (err) {
+          addToast({ message: `Failed to purge poll: ${(err as Error).message}` });
+        }
+      },
+    });
   };
 
   const openBigScreen = () => {
@@ -251,10 +268,10 @@ const HostDashboard: React.FC = () => {
           </div>
 
           {/* Activity strip */}
-          {poll.status === 'live' && joinCount > 0 && (
+          {(poll.status === 'live' || poll.status === 'closed') && joinCount > 0 && (
             <div style={{ borderTop: '2px solid var(--ash)', paddingTop: 12 }}>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: '0 0 8px', textTransform: 'uppercase' }}>
-                Votes in: {voteCount} / {joinCount} joined
+                Votes in: {voteCount} / {joinCount} joined {poll.status === 'closed' ? '(FINAL TALLY)' : ''}
               </p>
               <div className="progress-track">
                 <div className="progress-fill" style={{ width: joinCount > 0 ? `${(voteCount / joinCount) * 100}%` : '0%' }} />
@@ -279,6 +296,36 @@ const HostDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Options */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+            {/* Confidential Host Leader Preview (visible during closed status before Reveal) */}
+            {poll.status === 'closed' && result && (
+              <div style={{ marginBottom: 20, border: '3px solid var(--pumpkin)', background: 'var(--ink)', padding: '14px 18px', boxShadow: '6px 6px 0 var(--pumpkin)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Crown size={24} color="var(--pumpkin)" />
+                  <div>
+                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--pumpkin)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      CONFIDENTIAL HOST PREVIEW · RESULTS FROZEN
+                    </p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--bone)', margin: '4px 0 0' }}>
+                      {result.totalVotes === 0 ? (
+                        'NO VOTES RECORDED'
+                      ) : result.winners.length === 1 ? (
+                        <>
+                          LEADER: <strong>{options.find((o) => o.id === result.winners[0])?.label} — {options.find((o) => o.id === result.winners[0])?.title}</strong> ({result.tallies.find((t) => t.optionId === result.winners[0])?.count || 0} votes · {result.tallies.find((t) => t.optionId === result.winners[0])?.percentage || 0}%)
+                        </>
+                      ) : (
+                        <>
+                          DEADLOCK TIE: {result.winners.length} CONTESTANTS TIED ({result.tallies[0]?.count || 0} votes each)
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', background: 'var(--void)', padding: '4px 10px', border: '1px solid var(--ash)' }}>
+                  HIDDEN FROM AUDIENCE UNTIL YOU REVEAL
+                </span>
+              </div>
+            )}
+
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--ash)', marginBottom: 16 }}>OPTIONS</h2>
             {options.length === 0 ? (
               <p style={{ color: 'var(--ash)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>No options yet.</p>
@@ -286,13 +333,14 @@ const HostDashboard: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
                 {options.map((opt) => {
                   const tally = result?.tallies.find((t) => t.optionId === opt.id);
+                  const showCounts = poll.settings.showLiveCountsHost && (poll.status === 'live' || poll.status === 'closed');
                   return (
                     <OptionCard
                       key={opt.id}
                       option={opt}
                       disabled
-                      voteCount={poll.settings.showLiveCountsHost && poll.status === 'live' ? (tally?.count ?? 0) : undefined}
-                      votePercent={poll.settings.showLiveCountsHost && poll.status === 'live' ? (tally?.percentage ?? 0) : undefined}
+                      voteCount={showCounts ? (tally?.count ?? 0) : undefined}
+                      votePercent={showCounts ? (tally?.percentage ?? 0) : undefined}
                     />
                   );
                 })}
@@ -486,6 +534,17 @@ const HostDashboard: React.FC = () => {
           }
         }
       `}</style>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel="PURGE POLL"
+        cancelLabel="CANCEL"
+        variant="danger"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

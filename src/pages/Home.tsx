@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ArrowRight, Trash2 } from 'lucide-react';
 import BatsAnimation from '../components/ui/BatsAnimation';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import { PumpkinIcon, BatIcon, CandleIcon, SkullIcon } from '../components/ui/HalloweenIcons';
 import { useToast } from '../components/ui/ToastContext';
 import { purgePoll, purgeAllRecentPolls } from '../firebase/pollService';
@@ -14,6 +15,17 @@ const Home: React.FC = () => {
   const { addToast } = useToast();
   const [recent, setRecent] = useState<RecentPoll[]>(() => getRecentPolls());
   const [resumeCode, setResumeCode] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const handleResume = (poll: RecentPoll) => {
     navigate(`/host/${poll.pollId}?token=${poll.hostToken}`);
@@ -31,33 +43,41 @@ const Home: React.FC = () => {
     }
   };
 
-  const handlePurgeOne = async (e: React.MouseEvent, poll: RecentPoll) => {
+  const handlePurgeOne = (e: React.MouseEvent, poll: RecentPoll) => {
     e.stopPropagation();
-    const confirmed = window.confirm(
-      `PURGE "${poll.title.toUpperCase()}" PERMANENTLY?\n\nThis will destroy this poll, all options, and all votes from Firestore and this device. This cannot be undone.`
-    );
-    if (!confirmed) return;
-    try {
-      await purgePoll(poll.pollId, poll.hostToken);
-      setRecent((prev) => prev.filter((p) => p.pollId !== poll.pollId));
-      addToast({ message: 'Poll permanently purged from existence.' });
-    } catch (err) {
-      addToast({ message: `Purge failed: ${(err as Error).message}` });
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: `PURGE "${poll.title.toUpperCase()}"?`,
+      message: 'This will permanently destroy this poll, all options, and all cast votes from Cloud Firestore and this device. This cannot be undone.',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await purgePoll(poll.pollId, poll.hostToken);
+          setRecent((prev) => prev.filter((p) => p.pollId !== poll.pollId));
+          addToast({ message: 'Poll permanently purged from existence.' });
+        } catch (err) {
+          addToast({ message: `Purge failed: ${(err as Error).message}` });
+        }
+      },
+    });
   };
 
-  const handlePurgeAll = async () => {
-    const confirmed = window.confirm(
-      'PURGE ALL PAST POLLS PERMANENTLY?\n\nThis will destroy all past polls from Firestore and this device. This cannot be undone.'
-    );
-    if (!confirmed) return;
-    try {
-      await purgeAllRecentPolls();
-      setRecent([]);
-      addToast({ message: 'All past polls permanently purged.' });
-    } catch (err) {
-      addToast({ message: `Purge all failed: ${(err as Error).message}` });
-    }
+  const handlePurgeAll = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'PURGE ALL PAST POLLS?',
+      message: 'This will permanently destroy all past polls, options, and ballots from Cloud Firestore and this device. This cannot be undone.',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await purgeAllRecentPolls();
+          setRecent([]);
+          addToast({ message: 'All past polls permanently purged.' });
+        } catch (err) {
+          addToast({ message: `Purge all failed: ${(err as Error).message}` });
+        }
+      },
+    });
   };
 
   return (
@@ -236,6 +256,17 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel="PURGE"
+        cancelLabel="CANCEL"
+        variant="danger"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

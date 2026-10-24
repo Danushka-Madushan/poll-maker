@@ -232,6 +232,27 @@ const VoteScreen: React.FC = () => {
     );
   }
 
+  /* ---- REVEALED / TRANSITION TO RESULTS ---- */
+  if (poll?.status === 'revealed') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--void)', flexDirection: 'column', gap: 16, padding: 24, position: 'relative', overflow: 'hidden' }}>
+        <BatsAnimation />
+        <div style={{ border: '4px solid var(--pumpkin)', background: 'var(--ink)', padding: 36, textAlign: 'center', maxWidth: 400, width: '100%', boxShadow: '8px 8px 0 var(--pumpkin)', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <SkullIcon size={64} color="var(--pumpkin)" />
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--pumpkin)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            THE VEIL IS LIFTED!
+          </h1>
+          <div className="hazard-stripes" style={{ height: 8, width: '100%', margin: '16px 0' }} />
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--bone)', margin: 0, letterSpacing: '0.06em' }}>
+            ENTERING THE HALL OF FAME…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   /* ---- VOTED CONFIRMATION ---- */
   if (myVote && poll?.status === 'live') {
     const votedOptions = options.filter((o) => myVote.optionIds.includes(o.id));
