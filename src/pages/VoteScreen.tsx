@@ -229,7 +229,7 @@ const VoteScreen: React.FC = () => {
       </div>
 
       {/* Options grid */}
-      <div style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '12px 12px 24px', overflowY: 'auto' }}>
         {poll?.subtitle && (
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--ash)', marginBottom: 12 }}>{poll.subtitle}</p>
         )}
@@ -246,7 +246,7 @@ const VoteScreen: React.FC = () => {
       </div>
 
       {/* Sticky bottom CTA */}
-      <div style={{ position: 'sticky', bottom: 0, borderTop: '3px solid var(--bone)', background: 'var(--ink)', padding: 12 }}>
+      <div style={{ position: 'sticky', bottom: 0, zIndex: 20, borderTop: '3px solid var(--bone)', background: 'var(--ink)', padding: 12 }}>
         <button
           className="btn-primary"
           style={{ width: '100%', fontSize: 20, padding: '16px 24px' }}

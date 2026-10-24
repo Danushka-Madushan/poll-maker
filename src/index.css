@@ -480,6 +480,7 @@ a:hover {
   overflow: hidden;
   transition: border-color 120ms;
   aspect-ratio: 1 / 1;
+  isolation: isolate;
 }
 .option-card.selected {
   border: 4px solid var(--pumpkin);
