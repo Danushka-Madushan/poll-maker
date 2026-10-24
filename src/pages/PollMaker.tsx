@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ImageUploader from '../components/ui/ImageUploader';
 import { useToast } from '../components/ui/ToastContext';
+import { PumpkinIcon } from '../components/ui/HalloweenIcons';
 import { createPoll, getPoll, updatePollDraft } from '../firebase/pollService';
 import type { DraftOption, DraftPoll, PollSettings } from '../types/poll';
 import { DEFAULT_SETTINGS } from '../types/poll';
@@ -15,13 +16,14 @@ function newOption(order: number): DraftOption {
   return { id: generateId(), title: '', imageDataUrl: '', label: orderToLabel(order) };
 }
 
-/** Phone mock preview of the voting screen */
+/** Retro-arcade Halloween phone mock preview of the voting screen */
 const PhonePreview: React.FC<{ draft: DraftPoll }> = ({ draft }) => (
   <div style={{
-    border: '4px solid var(--bone)',
+    border: '6px solid var(--bone)',
+    boxShadow: '10px 10px 0 var(--bone)',
     width: '100%',
     maxWidth: 320,
-    minHeight: 560,
+    minHeight: 580,
     margin: '0 auto',
     background: 'var(--void)',
     display: 'flex',
@@ -29,31 +31,37 @@ const PhonePreview: React.FC<{ draft: DraftPoll }> = ({ draft }) => (
     overflow: 'hidden',
     position: 'relative',
   }}>
-    {/* Phone top bar */}
-    <div style={{ height: 8, background: 'var(--bone)' }} />
+    {/* Retro speaker notch & camera dot */}
+    <div style={{ height: 20, background: 'var(--ink)', borderBottom: '2px solid var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+      <div style={{ width: 40, height: 4, background: 'var(--ash)' }} />
+      <div style={{ width: 6, height: 6, background: 'var(--pumpkin)' }} />
+    </div>
+
+    {/* Phone top hazard stripes */}
+    <div className="hazard-stripes" style={{ height: 4, width: '100%' }} />
 
     {/* Poll title */}
-    <div style={{ padding: '12px 12px 8px', borderBottom: '2px solid var(--ash)' }}>
-      <p style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--bone)', textTransform: 'uppercase' }}>
+    <div style={{ padding: '10px 12px', borderBottom: '2px solid var(--bone)', background: 'var(--ink)' }}>
+      <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--bone)', textTransform: 'uppercase', margin: 0 }}>
         {draft.title || 'POLL TITLE'}
       </p>
       {draft.subtitle && (
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ash)', marginTop: 4 }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--ash)', marginTop: 4, margin: '4px 0 0' }}>
           {draft.subtitle}
         </p>
       )}
     </div>
 
     {/* Options preview */}
-    <div style={{ padding: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, flex: 1 }}>
+    <div style={{ padding: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, flex: 1, overflowY: 'auto' }}>
       {draft.options.slice(0, 8).map((opt) => (
-        <div key={opt.id} style={{ position: 'relative', aspectRatio: '1/1', border: '2px solid var(--bone)', overflow: 'hidden', background: 'var(--ink)' }}>
+        <div key={opt.id} style={{ position: 'relative', aspectRatio: '1/1', border: '2px solid var(--bone)', overflow: 'hidden', background: 'var(--ink)', boxShadow: '2px 2px 0 var(--bone)' }}>
           {opt.imageDataUrl
             ? <img src={opt.imageDataUrl} alt={opt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ash)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>IMG</div>
           }
-          <div style={{ position: 'absolute', top: 0, left: 0, background: 'var(--bone)', color: 'var(--void)', fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 5px' }}>{opt.label}</div>
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--void)', color: 'var(--bone)', fontFamily: 'var(--font-display)', fontSize: 9, padding: '3px 5px', textTransform: 'uppercase', borderTop: '1px solid var(--bone)' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, background: 'var(--bone)', color: 'var(--void)', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 900, padding: '2px 4px' }}>{opt.label}</div>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--void)', color: 'var(--bone)', fontFamily: 'var(--font-display)', fontSize: 9, padding: '3px 4px', textTransform: 'uppercase', borderTop: '1px solid var(--bone)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {opt.title || '—'}
           </div>
         </div>
@@ -61,8 +69,8 @@ const PhonePreview: React.FC<{ draft: DraftPoll }> = ({ draft }) => (
     </div>
 
     {/* CTA bar */}
-    <div style={{ padding: 8, borderTop: '2px solid var(--ash)', background: 'var(--ink)' }}>
-      <div style={{ background: 'var(--ash)', color: 'var(--void)', fontFamily: 'var(--font-display)', fontSize: 13, textAlign: 'center', padding: '10px', textTransform: 'uppercase', opacity: 0.6 }}>
+    <div style={{ padding: 10, borderTop: '2px solid var(--bone)', background: 'var(--ink)' }}>
+      <div style={{ background: 'var(--pumpkin)', color: 'var(--void)', fontFamily: 'var(--font-display)', fontSize: 12, textAlign: 'center', padding: '10px', textTransform: 'uppercase', boxShadow: '3px 3px 0 var(--bone)', fontWeight: 900 }}>
         CAST YOUR VOTE
       </div>
     </div>
@@ -235,20 +243,47 @@ const PollMaker: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--void)' }}>
+      {/* Top accent hazard stripes */}
+      <div className="hazard-stripes" style={{ height: 6, width: '100%' }} />
+
       {/* Header */}
-      <div style={{ borderBottom: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ borderBottom: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16, background: 'var(--ink)' }}>
         <button className="btn-ghost" onClick={() => navigate('/')} aria-label="Back to home">← BACK</button>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, color: 'var(--bone)', margin: 0 }}>POLL MAKER</h1>
-        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)' }}>DRAFT AUTOSAVED</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <PumpkinIcon size={26} color="var(--pumpkin)" />
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--bone)', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
+              {isEditing ? 'EDIT POLL OPTIONS' : 'POLL MAKER'}
+            </h1>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: '4px 0 0', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              ✦ SUMMON YOUR CONTEST ✦
+            </p>
+          </div>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--ash)', background: 'var(--void)', color: 'var(--toxic)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span className="blink-dot" style={{ width: 8, height: 8 }} />
+            CRYPT AUTOSAVE
+          </span>
+        </div>
       </div>
 
       {/* Two-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '60% 40%', minHeight: 'calc(100vh - 73px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '60% 40%', minHeight: 'calc(100vh - 81px)' }}>
         {/* LEFT — Builder */}
         <div style={{ padding: 32, borderRight: '3px solid var(--bone)', overflowY: 'auto' }}>
 
-          {/* Poll details */}
-          <div style={{ marginBottom: 32 }}>
+          {/* STEP 1: Contest Details */}
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <span style={{ background: 'var(--pumpkin)', color: 'var(--void)', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 900, padding: '4px 8px' }}>
+                01
+              </span>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--bone)', margin: 0, textTransform: 'uppercase' }}>
+                CONTEST DETAILS
+              </h2>
+            </div>
+
             <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
               Poll Title *
             </label>
@@ -257,10 +292,10 @@ const PollMaker: React.FC = () => {
               value={title}
               maxLength={80}
               onChange={(e) => { setTitle(e.target.value); setErrors((p) => { const n = {...p}; delete n.title; return n; }); }}
-              placeholder="Best Costume 2026"
+              placeholder="e.g. Best Costume 2026"
             />
             {errors.title && <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 12, marginTop: 4 }}>{errors.title}</p>}
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', marginTop: 4 }}>{title.length}/80</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', marginTop: 4 }}>{title.length}/80 characters</p>
 
             <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 16 }}>
               Subtitle (optional)
@@ -270,16 +305,26 @@ const PollMaker: React.FC = () => {
               value={subtitle}
               maxLength={120}
               onChange={(e) => setSubtitle(e.target.value)}
-              placeholder="Vote for your favourite Halloween costume!"
+              placeholder="e.g. Vote for your favourite Halloween disguise!"
             />
           </div>
 
-          {/* Options grid */}
-          <div style={{ marginBottom: 24 }}>
+          {/* STEP 2: Contestants */}
+          <div style={{ marginBottom: 36, borderTop: '2px solid var(--ash)', paddingTop: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--bone)' }}>OPTIONS ({options.length}/{MAX_OPTIONS})</h2>
-              {errors.options && <span style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{errors.options}</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ background: 'var(--toxic)', color: 'var(--void)', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 900, padding: '4px 8px' }}>
+                  02
+                </span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--bone)', margin: 0, textTransform: 'uppercase' }}>
+                  CONTESTANTS ({options.length}/{MAX_OPTIONS})
+                </h2>
+              </div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                MIN {MIN_OPTIONS} · MAX {MAX_OPTIONS}
+              </span>
             </div>
+            {errors.options && <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 12, marginBottom: 12 }}>{errors.options}</p>}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               {options.map((opt, idx) => (
@@ -292,93 +337,128 @@ const PollMaker: React.FC = () => {
                   style={{
                     border: `3px solid ${errors[`opt_${opt.id}`] || errors[`opt_img_${opt.id}`] ? 'var(--blood)' : 'var(--bone)'}`,
                     background: 'var(--ink)',
-                    padding: 12,
+                    boxShadow: '4px 4px 0 var(--bone)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 8,
                     opacity: draggedIdx === idx ? 0.4 : 1,
+                    transition: 'box-shadow 120ms linear, transform 120ms linear',
                   }}
                 >
-                  {/* Label & drag handle */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  {/* Card header strip */}
+                  <div style={{ background: 'var(--void)', padding: '6px 8px', borderBottom: '2px solid var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span
-                        style={{ cursor: 'grab', userSelect: 'none', fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--ash)' }}
+                        style={{ cursor: 'grab', userSelect: 'none', fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--ash)', lineHeight: 1 }}
                         title="Drag to reorder"
                       >
                         ⋮⋮
                       </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--pumpkin)' }}>OPTION {opt.label}</span>
+                      <span style={{ background: 'var(--bone)', color: 'var(--void)', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 900, padding: '2px 6px' }}>
+                        {opt.label}
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 12 }} onClick={() => moveOption(opt.id, -1)} disabled={idx === 0} aria-label="Move up">↑</button>
-                      <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 12 }} onClick={() => moveOption(opt.id, 1)} disabled={idx === options.length - 1} aria-label="Move down">↓</button>
-                      <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 12 }} onClick={() => duplicateOption(opt.id)} aria-label="Duplicate">⧉</button>
-                      <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 12, borderColor: 'var(--blood)', color: 'var(--blood)' }} onClick={() => removeOption(opt.id)} disabled={options.length <= MIN_OPTIONS} aria-label="Remove">×</button>
+                    <div style={{ display: 'flex', gap: 3 }}>
+                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11 }} onClick={() => moveOption(opt.id, -1)} disabled={idx === 0} aria-label="Move up">↑</button>
+                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11 }} onClick={() => moveOption(opt.id, 1)} disabled={idx === options.length - 1} aria-label="Move down">↓</button>
+                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11 }} onClick={() => duplicateOption(opt.id)} aria-label="Duplicate">⧉</button>
+                      <button className="btn-ghost" style={{ padding: '2px 5px', fontSize: 11, borderColor: 'var(--blood)', color: 'var(--blood)' }} onClick={() => removeOption(opt.id)} disabled={options.length <= MIN_OPTIONS} aria-label="Remove">×</button>
                     </div>
                   </div>
 
-                  {/* Image upload */}
-                  <div style={{ aspectRatio: '1/1' }}>
-                    <ImageUploader
-                      value={opt.imageDataUrl}
-                      onChange={(url) => { updateOption(opt.id, { imageDataUrl: url }); setErrors((p) => { const n = {...p}; delete n[`opt_img_${opt.id}`]; return n; }); }}
-                      onError={(msg) => addToast({ message: msg })}
+                  {/* Card body */}
+                  <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                    {/* Image upload */}
+                    <div style={{ aspectRatio: '1/1', border: '2px solid var(--bone)', overflow: 'hidden' }}>
+                      <ImageUploader
+                        value={opt.imageDataUrl}
+                        onChange={(url) => { updateOption(opt.id, { imageDataUrl: url }); setErrors((p) => { const n = {...p}; delete n[`opt_img_${opt.id}`]; return n; }); }}
+                        onError={(msg) => addToast({ message: msg })}
+                      />
+                    </div>
+                    {errors[`opt_img_${opt.id}`] && (
+                      <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 11, margin: 0 }}>
+                        {errors[`opt_img_${opt.id}`]}
+                      </p>
+                    )}
+
+                    {/* Title input */}
+                    <input
+                      className={`input ${errors[`opt_${opt.id}`] ? 'input-error' : ''}`}
+                      style={{ fontSize: 13, padding: '6px 8px' }}
+                      value={opt.title}
+                      maxLength={40}
+                      onChange={(e) => updateOption(opt.id, { title: e.target.value })}
+                      placeholder="Contestant name…"
+                      aria-label={`Option ${opt.label} title`}
                     />
+                    {errors[`opt_${opt.id}`] && (
+                      <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 11, margin: 0 }}>
+                        {errors[`opt_${opt.id}`]}
+                      </p>
+                    )}
                   </div>
-                  {errors[`opt_img_${opt.id}`] && (
-                    <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 11, margin: 0 }}>
-                      {errors[`opt_img_${opt.id}`]}
-                    </p>
-                  )}
-
-                  {/* Title input */}
-                  <input
-                    className={`input ${errors[`opt_${opt.id}`] ? 'input-error' : ''}`}
-                    style={{ fontSize: 14 }}
-                    value={opt.title}
-                    maxLength={40}
-                    onChange={(e) => updateOption(opt.id, { title: e.target.value })}
-                    placeholder="Option title…"
-                    aria-label={`Option ${opt.label} title`}
-                  />
-                  {errors[`opt_${opt.id}`] && (
-                    <p style={{ color: 'var(--blood)', fontFamily: 'var(--font-mono)', fontSize: 11, margin: 0 }}>
-                      {errors[`opt_${opt.id}`]}
-                    </p>
-                  )}
                 </div>
               ))}
 
               {/* Add option button */}
               {options.length < MAX_OPTIONS && (
                 <button
-                  className="option-card-empty"
                   onClick={addOption}
-                  aria-label="Add option"
-                  style={{ minHeight: 120 }}
+                  aria-label="Add contestant"
+                  style={{
+                    border: '3px dashed var(--bone)',
+                    background: 'rgba(26,22,32,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    minHeight: 220,
+                    cursor: 'pointer',
+                    color: 'var(--bone)',
+                    boxShadow: '4px 4px 0 rgba(244,238,223,0.2)',
+                    transition: 'all 120ms linear',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--pumpkin)';
+                    e.currentTarget.style.color = 'var(--pumpkin)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--bone)';
+                    e.currentTarget.style.color = 'var(--bone)';
+                  }}
                 >
-                  <span style={{ fontSize: 32 }}>+</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>ADD OPTION</span>
+                  <span style={{ fontSize: 36, lineHeight: 1, fontFamily: 'var(--font-display)' }}>+</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em', fontWeight: 700 }}>
+                    SUMMON CONTESTANT
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ash)' }}>
+                    ({MAX_OPTIONS - options.length} slots remain)
+                  </span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Settings */}
-          <div style={{ borderTop: '3px solid var(--ash)', paddingTop: 16 }}>
+          {/* STEP 3: Settings */}
+          <div style={{ borderTop: '2px solid var(--ash)', paddingTop: 24, marginBottom: 24 }}>
             <button
               className="btn-ghost"
               onClick={() => setSettingsOpen((v) => !v)}
-              style={{ width: '100%', justifyContent: 'space-between' }}
+              style={{ width: '100%', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--ink)', border: '2px solid var(--bone)' }}
               aria-expanded={settingsOpen}
             >
-              <span>⚙ SETTINGS</span>
-              <span>{settingsOpen ? '▲' : '▼'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ background: 'var(--witch)', color: 'var(--bone)', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 900, padding: '4px 8px' }}>
+                  03
+                </span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 16 }}>RULES OF THE RITUAL</span>
+              </div>
+              <span>{settingsOpen ? '▲ COLLAPSE' : '▼ EXPAND'}</span>
             </button>
 
             {settingsOpen && (
-              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ marginTop: 16, padding: 16, background: 'var(--ink)', border: '2px solid var(--bone)', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Votes per person selector */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <label style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Votes per person</label>
@@ -432,10 +512,10 @@ const PollMaker: React.FC = () => {
           </div>
 
           {/* Create button */}
-          <div style={{ marginTop: 32, paddingTop: 24, borderTop: '3px solid var(--bone)' }}>
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: '3px solid var(--bone)' }}>
             <button
               className="btn-primary"
-              style={{ width: '100%', fontSize: 20, padding: '18px 24px' }}
+              style={{ width: '100%', fontSize: 20, padding: '18px 24px', boxShadow: '8px 8px 0 var(--bone)' }}
               onClick={handleSubmit}
               disabled={submitting || options.length < MIN_OPTIONS}
             >
@@ -443,17 +523,20 @@ const PollMaker: React.FC = () => {
             </button>
             {options.length < MIN_OPTIONS && (
               <p style={{ color: 'var(--ash)', fontFamily: 'var(--font-mono)', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
-                Add at least {MIN_OPTIONS} options to create a poll
+                Add at least {MIN_OPTIONS} options to summon the contest
               </p>
             )}
           </div>
         </div>
 
         {/* RIGHT — Live preview */}
-        <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, position: 'sticky', top: 0, height: 'calc(100vh - 73px)', overflowY: 'auto' }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
-            AUDIENCE PREVIEW
-          </p>
+        <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, position: 'sticky', top: 0, height: 'calc(100vh - 81px)', overflowY: 'auto', background: 'rgba(26,22,32,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="blink-dot" style={{ width: 8, height: 8 }} />
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
+              LIVE AUDIENCE PREVIEW
+            </p>
+          </div>
           <PhonePreview draft={draft} />
         </div>
       </div>
