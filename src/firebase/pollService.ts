@@ -298,22 +298,23 @@ export async function getPollByJoinCode(code: string): Promise<Poll | null> {
   const cleanCode = normalizeJoinCode(code);
   const formattedCode = formatJoinCode(cleanCode);
 
-  // Try Firestore first
+  // Try Firestore first using simple equality (avoids composite index and multiple 'in' clauses)
   try {
     const q = query(
       collection(db, 'polls'),
-      where('joinCode', 'in', [cleanCode, formattedCode]),
-      where('status', 'in', ['lobby', 'live', 'closed', 'revealed'])
+      where('joinCode', '==', cleanCode)
     );
     const snap = await getDocs(q);
     if (!snap.empty) {
       const pollDoc = snap.docs[0];
       const poll    = pollDoc.data() as Omit<Poll, 'options'>;
-      const optSnap = await getDocs(collection(db, 'polls', poll.id, 'options'));
-      const options: PollOption[] = optSnap.docs
-        .map((d) => d.data() as PollOption)
-        .sort((a, b) => a.order - b.order);
-      return { ...poll, options };
+      if (poll.status !== 'draft') {
+        const optSnap = await getDocs(collection(db, 'polls', poll.id, 'options'));
+        const options: PollOption[] = optSnap.docs
+          .map((d) => d.data() as PollOption)
+          .sort((a, b) => a.order - b.order);
+        return { ...poll, options };
+      }
     }
   } catch (err) {
     console.debug('Firestore getPollByJoinCode notice:', err);
@@ -495,87 +496,81 @@ export function subscribeToVotes(
 /*  AUDIENCE ACTIONS                                                  */
 /* ------------------------------------------------------------------ */
 
-/** Registers an audience member as a participant. Idempotent. */
+/** Registers an audience member as a participant. Idempotent single-roundtrip write. */
 export async function joinPoll(
   pollId: string,
   deviceToken: string,
   nickname?: string
 ): Promise<void> {
+  const participant: Participant = {
+    id:        deviceToken,
+    pollId,
+    joinedAt:  Date.now(),
+    nickname:  nickname || undefined,
+  };
+
   const local = getLocalParticipants(pollId);
   if (!local.some((p) => p.id === deviceToken)) {
-    const participant: Participant = {
-      id:        deviceToken,
-      pollId,
-      joinedAt:  Date.now(),
-      nickname,
-    };
     saveLocalParticipants(pollId, [...local, participant]);
   }
 
   try {
     const ref = doc(db, 'polls', pollId, 'participants', deviceToken);
-    const existing = await getDoc(ref);
-    if (!existing.exists()) {
-      const participant: Participant = {
-        id:        deviceToken,
-        pollId,
-        joinedAt:  Date.now(),
-        nickname,
-      };
-      await setDoc(ref, participant);
-    }
+    await setDoc(ref, participant, { merge: true });
   } catch (err) {
     console.debug('Firestore joinPoll notice:', err);
   }
 }
 
-/** Casts or updates a vote. Idempotent per deviceToken. */
+/** Casts or updates a vote. Idempotent per deviceToken with exponential retry. */
 export async function castVote(
   pollId: string,
   deviceToken: string,
   optionIds: string[]
 ): Promise<void> {
+  const localPoll = getLocalPoll(pollId);
+  if (localPoll && localPoll.status !== 'live') {
+    throw new Error('Voting is not live. Votes can only be cast while the poll is live.');
+  }
+
   const now = Date.now();
   const localVotes = getLocalVotes(pollId);
-  const existingIdx = localVotes.findIndex((v) => v.participantId === deviceToken);
-  let updatedVotes: Vote[];
+  const existingVote = localVotes.find((v) => v.participantId === deviceToken);
+  const createdAt = existingVote?.createdAt ?? now;
 
-  if (existingIdx >= 0) {
-    updatedVotes = localVotes.map((v, i) =>
-      i === existingIdx ? { ...v, optionIds, updatedAt: now } : v
-    );
-  } else {
-    const newVote: Vote = {
-      id:            deviceToken,
-      pollId,
-      participantId: deviceToken,
-      optionIds,
-      createdAt:     now,
-      updatedAt:     now,
-    };
-    updatedVotes = [...localVotes, newVote];
-  }
+  const voteData: Vote = {
+    id:            deviceToken,
+    pollId,
+    participantId: deviceToken,
+    optionIds,
+    createdAt,
+    updatedAt:     now,
+  };
+
+  const existingIdx = localVotes.findIndex((v) => v.participantId === deviceToken);
+  const updatedVotes = existingIdx >= 0
+    ? localVotes.map((v, i) => (i === existingIdx ? voteData : v))
+    : [...localVotes, voteData];
   saveLocalVotes(pollId, updatedVotes);
 
-  try {
-    const ref = doc(db, 'polls', pollId, 'votes', deviceToken);
-    const existing = await getDoc(ref);
-    if (existing.exists()) {
-      await updateDoc(ref, { optionIds, updatedAt: now });
-    } else {
-      const vote: Vote = {
-        id:            deviceToken,
-        pollId,
-        participantId: deviceToken,
-        optionIds,
-        createdAt:     now,
-        updatedAt:     now,
-      };
-      await setDoc(ref, vote);
+  // Single-roundtrip atomic upsert with exponential retry for mobile reliability
+  const ref = doc(db, 'polls', pollId, 'votes', deviceToken);
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await setDoc(ref, voteData, { merge: true });
+      return;
+    } catch (err) {
+      lastError = err as Error;
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 300));
+      }
     }
-  } catch (err) {
-    console.debug('Firestore castVote notice:', err);
   }
+
+  console.warn('Firestore castVote failed after 3 attempts:', lastError);
+  throw lastError || new Error('Failed to record vote. Please check your connection and tap again.');
 }
 
 /** Gets an existing vote for this device. */

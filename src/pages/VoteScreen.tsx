@@ -8,6 +8,7 @@ import {
   joinPoll,
   castVote,
   getMyVote,
+  getPoll,
 } from '../firebase/pollService';
 import type { Poll, PollOption, Vote } from '../types/poll';
 import { getDeviceToken } from '../utils/device';
@@ -67,6 +68,28 @@ const VoteScreen: React.FC = () => {
     return () => { u1(); u2(); };
   }, [pollId, navigate]);
 
+  // Mobile focus & visibility change listener (reconciles on unlock / tab focus)
+  useEffect(() => {
+    if (!pollId) return;
+    const handleSync = () => {
+      if (document.visibilityState === 'visible') {
+        getMyVote(pollId, deviceToken).then(setMyVote).catch(console.error);
+        getPoll(pollId).then((p) => {
+          if (p) {
+            setPoll(p);
+            if (p.status === 'revealed') navigate(`/results/${pollId}`);
+          }
+        }).catch(console.error);
+      }
+    };
+    document.addEventListener('visibilitychange', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      document.removeEventListener('visibilitychange', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
+  }, [pollId, deviceToken, navigate]);
+
   // Stable shuffled options per voter session (pure hash of deviceToken + optionId)
   const displayOptions = useMemo(() => {
     if (options.length === 0) return [];
@@ -104,8 +127,9 @@ const VoteScreen: React.FC = () => {
       const vote = await getMyVote(pollId, deviceToken);
       setMyVote(vote);
       addToast({ message: 'Vote locked in!' });
-    } catch {
-      addToast({ message: 'Failed to cast vote. Reconnecting…' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to cast vote. Tap to retry.';
+      addToast({ message: msg });
     } finally {
       setCasting(false);
     }
