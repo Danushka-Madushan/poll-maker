@@ -19,10 +19,10 @@ service cloud.firestore {
         allow write: if true;
       }
 
-      // Votes subcollection (one vote per device token)
+      // Votes subcollection (one vote per device token; only accepted while poll is live)
       match /votes/{deviceToken} {
         allow read: if true;
-        allow write: if true;
+        allow write: if get(/databases/$(database)/documents/polls/$(pollId)).data.status == 'live';
       }
     }
   }
