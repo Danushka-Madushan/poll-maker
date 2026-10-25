@@ -1,79 +1,287 @@
 # 🎃 Halloween Poll Maker
 
-A live voting web tool for Halloween events (costume contests, pumpkin carving, best-decoration awards, party games) with a sharp, flat Halloween aesthetic. A host builds a poll out of image options, projects a QR code, the audience scans and votes on their phones, and the host reveals the winner on the big screen.
+[![React 19](https://img.shields.io/badge/React-19.3-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v4.3-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-13.1-FFCA28?style=flat-square&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+[![Deployment](https://img.shields.io/badge/Deploy-Firebase%20Hosting-FF5416?style=flat-square&logo=firebase&logoColor=white)](https://poll-maker-nibm.web.app)
 
-Built strictly according to [`Website Design Guide.md`](./Website%20Design%20Guide.md).
+> **A real-time, zero-friction live voting engine built for Halloween costume contests, pumpkin carvings, and party games.**  
+> Built strictly to a high-contrast **Neo-Brutalist Halloween Design System** — zero rounded corners, tactile offset shadows, instant QR join, and dual-screen synchronization.
 
----
-
-## ⚡ Core Features
-
-- **2-Minute Creation**: Fast Poll Maker with client-side 1:1 image cropping, drag & drop, and auto-labeling (A, B, C...).
-- **10-Second Join**: Instant QR code join with short unambiguous 6-char codes (e.g. `BOO482`). No accounts or sign-ups required.
-- **Dual Screen Architecture**:
-  - **Host Cockpit (`/host/:pollId`)**: Private control room with mini QR, live voter tallies, progress bar, audio mute toggle, and safety hold-to-confirm buttons.
-  - **Big Screen Display (`/display/:pollId`)**: High-contrast, no-scroll, 10-meter readable view for projectors and TVs. Shows giant QR code in Lobby, options in Live, suspense banner in Closed, and dramatic 6-second reveal in Revealed.
-- **Audience Voting (`/vote/:pollId`)**: Mobile-first thumb-friendly 2-column square card grid with full-screen image previews, lock-in confirmation, and real-time status transitions.
-- **Cinematic Reveal (`/results/:pollId`)**: 6-second reveal sequence (screen cuts to black → "AND THE WINNER IS..." → ranked bars slide in from bottom to top → winner slams in with orange WINNER banner) with Web Audio sound effects.
-- **CSV & Export**: Instant download of results as CSV.
+🌐 **Live Production Application:** [vote.danushka.me](https://vote.danushka.me) (or [poll-maker-nibm.web.app](https://poll-maker-nibm.web.app))
 
 ---
 
-## 🎨 Visual Design System
+## ⚡ Core Value Proposition
 
-- **Palette**:
-  - `--void` (`#0D0B10`): Deep dark background with subtle 5% halftone dots.
-  - `--ink` (`#1A1620`): Card and panel backgrounds.
-  - `--bone` (`#F4EEDF`): Primary text and high-contrast QR background.
-  - `--pumpkin` (`#FF6B00`): Primary buttons, selection, and winner accent.
-  - `--toxic` (`#B6FF2E`): Live status indicator (with slow 1Hz blinking square).
-  - `--blood` (`#E0283C`): Danger and stop actions.
-  - `--witch` (`#7A3BE0`): Lobby status accent.
-  - `--ash` (`#8A8394`): Secondary and muted text.
-- **Sharp & Flat**: Zero rounded corners (`border-radius: 0`), zero gradients, zero soft drop shadows.
-- **Offset Blocks**: 8px hard zero-blur offset blocks for tactile feedback (`box-shadow: 8px 8px 0 var(--bone)`).
-- **Typography**: `Archivo Black` (display headings), `Space Grotesk` (UI body), `Space Mono` (codes and labels).
+| Promise | How It's Achieved |
+| :--- | :--- |
+| **Create in under 2 minutes** | In-browser 1:1 image cropping and rotation, drag-and-drop / mobile gallery photo upload, automatic alphabetical contestant tagging (`A`, `B`, `C`...), and a real-time mobile simulator preview. |
+| **Join in under 10 seconds** | Audience members scan a high-density QR code or punch in a 6-character code (e.g., `BOO482`). Zero app downloads, zero account creation, and zero social sign-ins. |
+| **100% Real-time & Dual-Screen** | Host operates a private, confidential cockpit on laptop or phone while projecting a public-safe TV display on big screens or projectors via Firebase Firestore real-time snapshot sync. |
+| **Theatrical Suspense Reveal** | Step-by-step unmasking with a 6-second blackout reveal sequence, Web Audio synthesized victory sound effects, and a 3-tier towering 3D monolith podium. |
+
+---
+
+## 🏛️ Real-Time Dual-Screen Architecture
+
+Halloween Poll Maker decouples the **Host Control Room** from the **Audience Big Screen Display** to prevent accidental spoilers or awkward UI controls on event projectors:
+
+```
+                          ┌──────────────────────────┐
+                          │   Firebase Cloud Store   │
+                          │   Real-Time Data Engine  │
+                          └─────────────┬────────────┘
+                                        │ (Sub-100ms sync)
+        ┌───────────────────────────────┼───────────────────────────────┐
+        ▼                               ▼                               ▼
+┌──────────────────┐           ┌──────────────────┐           ┌──────────────────┐
+│  Host Cockpit    │           │ Big Screen TV    │           │  Audience Phones │
+│  /host/:pollId   │           │ /display/:code   │           │  /vote/:pollId   │
+├──────────────────┤           ├──────────────────┤           ├──────────────────┤
+│ • Start/Stop/End │           │ • 10-meter QR    │           │ • 2-Col Card Grid│
+│ • Private Leader │           │ • Live Contenders│           │ • Single Ballot  │
+│ • Tie-Breaker UI │           │ • Suspense Veil  │           │ • Vote Lock-in   │
+│ • Hold Buttons   │           │ • Tower Podium   │           │ • Auto-Reconnect │
+└──────────────────┘           └──────────────────┘           └──────────────────┘
+```
+
+---
+
+## 🎯 Key Features & Capabilities
+
+### 1. ⚡ Fast Contestant Builder (`/create`)
+- **Native Canvas Cropper**: Upload square or vertical images; rotate 90° or zoom directly in-browser using an interactive canvas modal with 3x3 rule-of-thirds gridlines.
+- **Mobile Gallery Picker**: Direct support for mobile camera roll and photo library without forcing live camera snapping.
+- **Client-Side Compression**: Transparently scales and recompresses heavy mobile photos to under 800KB WebP/JPEG, ensuring instant loads even on crowded event Wi-Fi.
+- **Interactive Sticky Simulator**: Live smartphone preview reflects title changes, option titles, and photos in real time as you build.
+
+### 2. 📺 Dedicated TV Portal & Alias Routing (`/display`)
+- **6-Character Code Alias**: Big screens can navigate directly to `/display` and enter the 6-character poll code (e.g. `BOO482`), or visit `/display/BOO482` directly without typing cumbersome 32-character Firestore UUIDs.
+- **10-Meter Legibility**: Auto-scaling typography (`clamp`), high-contrast bone-on-void styling, and no page scrolling required.
+- **Theatrical Crypt Monolith Podium**:
+  - Gold-gilded 1st Place Central Towering Monolith.
+  - Symmetrically aligned Silver (#2) and Bronze (#3) Altars.
+  - Interactive runner-up ticker strip for contests with 4+ entries.
+  - Canvas confetti and soaring bat particle physics.
+
+### 3. 🛡️ Private Host Cockpit (`/host/:pollId`)
+- **Safety Hold-to-Confirm**: Destructive transitions (Start Haunt, Freeze Votes, Reveal Winner) require holding the button for 1 second (`HoldButton`), preventing accidental taps in high-energy party settings.
+- **Confidential Preview**: The host sees who is leading while voting is frozen in the `Closed` state, without exposing results on the big screen.
+- **Tie-Breaker Control**: When contests result in a dead heat, hosts can either crown a singular champion or preserve co-winners.
+- **Audience Management**: Real-time counter of connected devices with a collapsible audience roll call.
+
+### 4. 📱 Frictionless Voter Client (`/vote/:pollId`)
+- **Anonymous Device Fingerprinting**: Combines browser storage and hardware entropy tokens (`getDeviceToken()`) to enforce **one-vote-per-person** without requiring Google, email, or phone authentication.
+- **Thumb-Friendly 2-Column Grid**: Large tap targets with tactile orange selection borders.
+- **Ballot Lock-In**: Full-screen confirmation modal with haptic feedback to prevent accidental misclicks.
+- **Offline Resilience**: Automatically detects connectivity drops (`navigator.onLine`) and presents an offline reconnection status bar without dropping ballot state.
+
+### 5. 🔊 Pure Synthesized Web Audio Engine
+- **Zero MP3/WAV Dependencies**: All sound effects are procedurally generated in real time using the native browser `AudioContext` and oscillator nodes:
+  - 🔘 **Card Tap**: Crisp 800Hz transient click.
+  - 🔔 **Lobby Gong**: Heavy 120Hz sub-bass gong resonance.
+  - ⚡ **Suspense Drone**: Eerie 55Hz pitch-swept saw-tooth wave.
+  - 🎺 **Victory Fanfare**: Ascending arpeggio chord progression (`C4` → `E4` → `G4` → `C5`).
+- **Global Mute Cockpit**: Host can instantly mute or unmute audio effects with state preserved in localStorage.
+
+### 6. 📊 Analytics, CSV & Social Export
+- **1-Click CSV Export**: Download complete poll tallies, voter turnout percentages, and contestant breakdowns with standardized timestamps.
+- **Social Card Canvas Generator**: Client-side generation of branded 1200x630px result banners for direct sharing on Instagram, Discord, or X.
+
+---
+
+## 🎨 The Neo-Brutalist Halloween Design System
+
+Strictly adhering to [`Website Design Guide.md`](./Website%20Design%20Guide.md), the user interface rejects generic gradients and rounded corners in favor of a raw, physical, high-impact aesthetic:
+
+### Design Principles
+1. **Zero Rounded Corners**: Globally enforced `border-radius: 0 !important` across all buttons, inputs, modal dialogs, and cards.
+2. **Hard Block Shadows**: High-contrast, zero-blur offset drop shadows (`4px 4px 0` or `8px 8px 0`).
+3. **Physical Depth**: Heavy 2px to 4px solid borders with tactile hover compression (`transform: translate(2px, 2px)`).
+4. **Geometric Spooky**: Procedural SVG jagged teeth edges, 45-degree yellow/black hazard stripes, and custom Halloween SVGs (`Ghost`, `Skull`, `Candle`, `Pumpkin`, `Bat`, `Cauldron`).
+
+### Color Palette
+
+| Token | Hex | Role | Contrast Rule |
+| :--- | :--- | :--- | :--- |
+| `--void` | `#0D0B10` | Primary deepest background | Base canvas |
+| `--ink` | `#1A1620` | Surface cards & panels | Secondary elevation |
+| `--crypt` | `#1E1E22` | Podium monoliths & borders | Tertiary elevation |
+| `--bone` | `#F4EEDF` | High-contrast body text & QR code | Primary foreground |
+| `--ash` | `#8A8394` | Monospace subtext & metadata | Muted elements |
+| `--pumpkin` | `#FF6B00` | Primary buttons, selections & Winner | **Always pair with `--void` text** |
+| `--toxic` | `#B6FF2E` | Live haunt status & checkmarks | **Always pair with `--void` text** |
+| `--blood` | `#E0283C` | Destructive actions, reset & stop | Danger foreground |
+| `--witch` | `#7A3BE0` | Lobby state & badge accents | Paired with `--void` text |
+
+---
+
+## 🔄 Finite State Machine (Poll Lifecycle)
+
+Every screen automatically transitions based on the active state in Firestore:
+
+```
+┌─────────┐      Host Starts      ┌─────────┐      Host Closes     ┌──────────┐
+│  LOBBY  │ ────────────────────> │  LIVE   │ ───────────────────> │  CLOSED  │
+└────┬────┘                       └─────────┘                      └────┬─────┘
+     │                                 ▲                                │
+     │                                 │ Host Reopens (Safety Valve)    │ Host Reveals
+     │                                 └────────────────────────────────┤
+     ▼                                                                  ▼
+[ Big Screen: QR Code ]          [ Audience: Vote Cards ]         ┌──────────┐
+[ Audience: "Waiting" ]          [ Big Screen: Contenders]        │ REVEALED │
+                                                                  └──────────┘
+                                                              [ Podium & Winner ]
+```
+
+| State | Big Screen Display | Audience Mobile | Host Control Actions |
+| :--- | :--- | :--- | :--- |
+| **`lobby`** | Giant QR + 6-Char Code + Live Join Counter | "You're in. Waiting for host…" | `PUSH & HOLD TO START` |
+| **`live`** | Live contestant gallery + Turnout progress bar | Interactive 2-column voting cards | `PUSH & HOLD TO FREEZE VOTES` |
+| **`closed`** | Suspense veil ("RESULTS ARE BEING SEALED") | "Voting closed. Awaiting reveal…" | `REOPEN VOTING` or `REVEAL WINNER` |
+| **`revealed`** | 3-Tier Podium + Confetti + Monoliths | Winner banner + "Your Pick" badge | `REPLAY REVEAL` or `CREATE NEW` |
 
 ---
 
 ## 🗺️ Application Routes
 
-| Path | Screen | Purpose |
-| --- | --- | --- |
-| `/` | Home | Host entry, resume recent polls, quick how-it-works |
-| `/create` | Poll Maker | 2-column builder with real-time phone preview & settings |
-| `/host/:pollId` | Host Dashboard | Private cockpit with Start, Hold-to-Stop, and Hold-to-Reveal |
-| `/display/:pollId` | Big Screen | TV/projector view (Lobby QR → Live → Closed → Reveal) |
-| `/join/:code` | Audience Join | Resolves QR code / join code with anonymous device token |
-| `/vote/:pollId` | Voting Screen | Thumb-friendly 2-column voting on mobile |
-| `/results/:pollId` | Results Screen | Winner banner, full ranking bars, and CSV export |
+| Path | Component | Purpose |
+| :--- | :--- | :--- |
+| `/` | [`Home.tsx`](./src/pages/Home.tsx) | Host entry, recent polls cache resume, feature breakdown |
+| `/create` | [`PollMaker.tsx`](./src/pages/PollMaker.tsx) | 2-column builder with real-time phone preview & crop modal |
+| `/host/:pollId` | [`HostDashboard.tsx`](./src/pages/HostDashboard.tsx) | Private host cockpit with safety buttons and leader preview |
+| `/display` | [`BigScreen.tsx`](./src/pages/BigScreen.tsx) | TV quick launcher (enter 6-character poll code) |
+| `/display/:pollId` | [`BigScreen.tsx`](./src/pages/BigScreen.tsx) | Projector/TV view (QR code → Live gallery → Crypt podium) |
+| `/join/:code` | [`JoinPage.tsx`](./src/pages/JoinPage.tsx) | Audience QR bridge; assigns anonymous device fingerprint |
+| `/vote/:pollId` | [`VoteScreen.tsx`](./src/pages/VoteScreen.tsx) | Thumb-friendly mobile voting cards with lock-in modal |
+| `/results/:pollId` | [`ResultsScreen.tsx`](./src/pages/ResultsScreen.tsx) | Full ranked results list, CSV export, and social share card |
 
 ---
 
-## 🛠️ Local Development
+## 📂 Project Structure
 
+```
+poll-maker/
+├── .github/workflows/
+│   └── deploy.yml              # Automated GitHub Actions CI/CD to Firebase
+├── firestore.rules             # Granular database security rules
+├── firebase.json               # Firebase Hosting & SPA rewrites configuration
+├── Website Design Guide.md     # The master Brutalist design specification
+├── src/
+│   ├── App.tsx                 # Route declarations with React Suspense & lazy loading
+│   ├── main.tsx                # React DOM entry point
+│   ├── index.css               # Design tokens, keyframe animations, Brutalist primitives
+│   ├── components/ui/
+│   │   ├── BatsAnimation.tsx   # Canvas-based bat particle physics
+│   │   ├── ConfirmModal.tsx    # Brutalist confirmation dialog
+│   │   ├── HalloweenIcons.tsx  # Sharp pure-SVG custom icons (Ghost, Skull, etc.)
+│   │   ├── HoldButton.tsx      # Press-and-hold safety button with radial filling
+│   │   ├── ImageCropModal.tsx  # Canvas 1:1 image cropper and 90° rotator
+│   │   ├── ImageUploader.tsx   # Mobile-friendly gallery picker with compression
+│   │   ├── OptionCard.tsx      # Tactile voting option card with image & badge
+│   │   ├── StatusChip.tsx      # Blinking status pill (LOBBY, LIVE, CLOSED)
+│   │   └── Toast.tsx           # Monospace notification snackbar
+│   ├── firebase/
+│   │   ├── config.ts           # Firebase app & Firestore initialization
+│   │   └── pollService.ts      # Real-time subscriptions, transactions & queries
+│   ├── pages/
+│   │   ├── Home.tsx            # Landing cockpit & stored device history
+│   │   ├── PollMaker.tsx       # Live contest builder with live preview
+│   │   ├── HostDashboard.tsx   # Private host command center
+│   │   ├── BigScreen.tsx       # TV / Projector public display
+│   │   ├── JoinPage.tsx        # QR code & nickname bridge
+│   │   ├── VoteScreen.tsx      # Mobile voting ballot
+│   │   └── ResultsScreen.tsx   # Final standings & export hub
+│   ├── types/
+│   │   └── poll.ts             # TypeScript definitions for Polls, Options & Votes
+│   └── utils/
+│       ├── audio.ts            # Web Audio API procedural synthesizer
+│       ├── canvasExport.ts     # Social share certificate generator
+│       ├── code.ts             # Unambiguous 6-character poll code utilities
+│       ├── device.ts           # Persistent anonymous device fingerprinting
+│       └── image.ts            # Client-side image validation & WebP compression
+```
+
+---
+
+## 🛠️ Getting Started
+
+### Prerequisites
+- **Node.js**: v18.0.0 or higher (v20+ recommended)
+- **npm**: v9.0.0 or higher
+- A [Firebase Project](https://console.firebase.google.com/) with Cloud Firestore enabled
+
+### 1. Clone & Install
 ```bash
-# 1. Install dependencies
+git clone https://github.com/Danushka-Madushan/poll-maker.git
+cd poll-maker
 npm install
+```
 
-# 2. Start Vite development server
+### 2. Configure Environment Variables
+Create a `.env` file in the project root:
+
+```env
+VITE_FIREBASE_API_KEY=your_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### 3. Deploy Firestore Security Rules
+Ensure your Firestore instance allows voting transitions using the included rules:
+```bash
+npx firebase-tools deploy --only firestore:rules
+```
+
+### 4. Run Locally
+```bash
 npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-# 3. Production build
+---
+
+## 🧪 Quality, Linting & Build
+
+```bash
+# Run ESLint validation (0 errors, 0 warnings enforced)
+npm run lint
+
+# Compile TypeScript and build for production
 npm run build
+
+# Preview production build locally
+npm run preview
 ```
 
 ---
 
-## 🚀 Deployment
+## 🚀 Continuous Deployment (CI/CD)
 
-### Firebase Hosting (Manual CLI)
-```bash
-npm run deploy
-```
+The repository includes a GitHub Actions workflow in `.github/workflows/deploy.yml` that builds and deploys directly to **Firebase Hosting** on every push to `main`.
 
-### GitHub Actions (Continuous Deployment)
-The repository includes `.github/workflows/deploy.yml` configured to build and deploy to Firebase Hosting on every push to the `main` branch.
-To enable automated deployments:
-1. In Firebase Console, generate a service account key or run `firebase init hosting:github`.
-2. Add the secret `FIREBASE_SERVICE_ACCOUNT_POLL_MAKER_NIBM` in your GitHub repository settings under **Settings > Secrets and variables > Actions**.
+### Setting Up GitHub Actions:
+1. In the Firebase Console, generate a Service Account Key with Firebase Hosting Admin permissions.
+2. In your GitHub repository, navigate to **Settings > Secrets and variables > Actions**.
+3. Add the following secrets:
+   - `FIREBASE_SERVICE_ACCOUNT_POLL_MAKER_NIBM`
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+Built with 🎃 by Danushka Madushan.
