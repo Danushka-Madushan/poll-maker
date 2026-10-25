@@ -95,7 +95,7 @@ const JoinPage: React.FC = () => {
   if (poll?.settings.requireNickname) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--void)', flexDirection: 'column', gap: 24, padding: 24 }}>
-        <div style={{ border: '3px solid var(--bone)', padding: 32, maxWidth: 400, width: '100%', textAlign: 'center', background: 'var(--ink)' }}>
+        <div className="join-card" style={{ border: '3px solid var(--bone)', padding: 32, maxWidth: 400, width: '100%', textAlign: 'center', background: 'var(--ink)' }}>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', marginBottom: 8 }}>JOINING</p>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--bone)', marginBottom: 24 }}>{poll.title}</h1>
           <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>

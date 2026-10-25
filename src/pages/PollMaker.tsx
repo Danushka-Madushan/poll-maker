@@ -257,7 +257,7 @@ const PollMaker: React.FC = () => {
       <div className="hazard-stripes" style={{ height: 6, width: '100%' }} />
 
       {/* Header */}
-      <div style={{ borderBottom: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16, background: 'var(--ink)' }}>
+      <div className="pollmaker-header" style={{ borderBottom: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16, background: 'var(--ink)' }}>
         <button className="btn-ghost" onClick={() => navigate('/')} aria-label="Back to home" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={16} /> BACK
         </button>
@@ -281,9 +281,9 @@ const PollMaker: React.FC = () => {
       </div>
 
       {/* Two-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '60% 40%', minHeight: 'calc(100vh - 81px)' }}>
+      <div className="pollmaker-grid" style={{ display: 'grid', gridTemplateColumns: '60% 40%', minHeight: 'calc(100vh - 81px)' }}>
         {/* LEFT — Builder */}
-        <div style={{ padding: 32, borderRight: '3px solid var(--bone)', overflowY: 'auto' }}>
+        <div className="pollmaker-builder-col" style={{ padding: 32, borderRight: '3px solid var(--bone)', overflowY: 'auto' }}>
 
           {/* STEP 1: Contest Details */}
           <div style={{ marginBottom: 36 }}>
@@ -568,7 +568,7 @@ const PollMaker: React.FC = () => {
         </div>
 
         {/* RIGHT — Live preview */}
-        <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, position: 'sticky', top: 0, height: 'calc(100vh - 81px)', overflowY: 'auto', background: 'rgba(26,22,32,0.3)' }}>
+        <div className="pollmaker-preview-col" style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, position: 'sticky', top: 0, height: 'calc(100vh - 81px)', overflowY: 'auto', background: 'rgba(26,22,32,0.3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="blink-dot" style={{ width: 8, height: 8 }} />
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
@@ -579,18 +579,6 @@ const PollMaker: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile styles */}
-      <style>{`
-        @media (max-width: 900px) {
-          div[style*="grid-template-columns: 60%"] {
-            grid-template-columns: 1fr !important;
-          }
-          div[style*="position: sticky"] {
-            position: static !important;
-            height: auto !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };

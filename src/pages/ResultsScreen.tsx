@@ -343,7 +343,7 @@ const ResultsScreen: React.FC = () => {
           </div>
 
           {/* Action Toolbar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div className="results-header-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button
               className="btn-ghost"
               onClick={replayReveal}
@@ -899,6 +899,7 @@ const ResultsScreen: React.FC = () => {
             {/* ================= FOOTER STATS GRID (§4.7) ================= */}
             {winnerVisible && (
               <section
+                className="results-stats-grid"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',

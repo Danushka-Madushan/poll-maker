@@ -173,7 +173,7 @@ const HostDashboard: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--void)', display: 'flex', flexDirection: 'column' }}>
       {/* Top bar */}
-      <div style={{ borderBottom: '3px solid var(--bone)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <div className="host-topbar" style={{ borderBottom: '3px solid var(--bone)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--bone)', margin: 0, flex: 1 }}>
           {poll.title}
         </h1>
@@ -198,10 +198,10 @@ const HostDashboard: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '280px 1fr', overflow: 'hidden' }}>
+      <div className="host-dashboard-grid" style={{ flex: 1, display: 'grid', gridTemplateColumns: '280px 1fr', overflow: 'hidden' }}>
 
         {/* Left — Join panel */}
-        <div style={{ borderRight: '3px solid var(--bone)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+        <div className="host-join-panel" style={{ borderRight: '3px solid var(--bone)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--ash)', margin: 0 }}>JOIN INFO</h2>
 
           {/* QR */}
@@ -293,9 +293,9 @@ const HostDashboard: React.FC = () => {
         </div>
 
         {/* Right — Options panel + action bar */}
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="host-options-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Options */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+          <div className="host-options-scroll" style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
             {/* Confidential Host Leader Preview (visible during closed status before Reveal) */}
             {poll.status === 'closed' && result && (
               <div style={{ marginBottom: 20, border: '3px solid var(--pumpkin)', background: 'var(--ink)', padding: '14px 18px', boxShadow: '6px 6px 0 var(--pumpkin)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -423,7 +423,7 @@ const HostDashboard: React.FC = () => {
           </div>
 
           {/* Action bar */}
-          <div style={{ borderTop: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'var(--ink)' }}>
+          <div className="host-actionbar" style={{ borderTop: '3px solid var(--bone)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'var(--ink)' }}>
             {poll.status === 'lobby' && (
               <>
                 <HoldButton
@@ -526,14 +526,6 @@ const HostDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile responsive styles */}
-      <style>{`
-        @media (max-width: 768px) {
-          div[style*="grid-template-columns: 280px"] {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
 
       <ConfirmModal
         isOpen={confirmModal.isOpen}

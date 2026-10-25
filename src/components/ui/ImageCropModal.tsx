@@ -35,8 +35,22 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const [posStart, setPosStart] = useState({ x: 0, y: 0 });
   const [imageMeta, setImageMeta] = useState<{ width: number; height: number } | null>(null);
   const [applying, setApplying] = useState(false);
+  const [viewSize, setViewSize] = useState(CROP_VIEW_SIZE);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Measure rendered viewfinder size for responsive mobile scaling
+  useEffect(() => {
+    if (!isOpen) return;
+    const updateSize = () => {
+      if (containerRef.current) {
+        setViewSize(containerRef.current.clientWidth || CROP_VIEW_SIZE);
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [isOpen]);
 
   // Load natural dimensions whenever imageSrc changes
   useEffect(() => {
@@ -122,7 +136,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
           y: position.y,
           zoom,
           rotation,
-          cropDisplaySize: CROP_VIEW_SIZE,
+          cropDisplaySize: viewSize,
         },
         600,
         0.82
@@ -133,17 +147,17 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
     } finally {
       setApplying(false);
     }
-  }, [imageSrc, position, zoom, rotation, applying, onApply]);
+  }, [imageSrc, position, zoom, rotation, viewSize, applying, onApply]);
 
   if (!isOpen || !imageSrc) return null;
 
-  // Compute CSS base scale for image to cover the 320x320 box initially
+  // Compute CSS base scale for image to cover the viewfinder box initially
   let baseScale = 1;
   if (imageMeta) {
     const isRotated = rotation % 180 !== 0;
     const effW = isRotated ? imageMeta.height : imageMeta.width;
     const effH = isRotated ? imageMeta.width : imageMeta.height;
-    baseScale = Math.max(CROP_VIEW_SIZE / effW, CROP_VIEW_SIZE / effH);
+    baseScale = Math.max(viewSize / effW, viewSize / effH);
   }
 
   return (
@@ -230,6 +244,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
           {/* 1:1 Viewfinder Square */}
           <div
             ref={containerRef}
+            className="crop-modal-viewfinder"
             style={{
               width: CROP_VIEW_SIZE,
               height: CROP_VIEW_SIZE,
@@ -293,7 +308,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </div>
 
           {/* Controls Cluster */}
-          <div style={{ width: '100%', maxWidth: CROP_VIEW_SIZE, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="crop-modal-controls" style={{ width: '100%', maxWidth: CROP_VIEW_SIZE, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* Zoom Slider Row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button

@@ -810,3 +810,163 @@ input[type="range"].brutalist-slider::-moz-range-thumb {
     font-size: 15px;
   }
 }
+
+/* ============================================================
+   RESPONSIVE — MOBILE (≤600px)
+   ============================================================ */
+@media (max-width: 600px) {
+  /* Buttons — full-tap-target minimum on mobile */
+  .btn-primary,
+  .btn-danger,
+  .btn-secondary {
+    min-height: 48px;
+  }
+  .btn-ghost {
+    min-height: 40px;
+  }
+
+  /* Toast — full-width on very small screens */
+  .toast-container {
+    left: 8px;
+    right: 8px;
+    bottom: 16px;
+  }
+  .toast {
+    min-width: unset;
+    width: 100%;
+  }
+
+  /* Option cards — reduce box-shadow offset on mobile to avoid clipping */
+  .option-card {
+    box-shadow: 3px 3px 0 var(--bone);
+  }
+  .option-card.selected {
+    box-shadow: 4px 4px 0 var(--pumpkin);
+  }
+
+  /* Result bars — reduce label font size to prevent overflow */
+  .result-bar-label {
+    font-size: 12px;
+    padding: 0 8px;
+  }
+  .result-bar-pct {
+    font-size: 11px;
+    padding: 0 8px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — HOST DASHBOARD MOBILE
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Stack the two-column host dashboard layout */
+  .host-dashboard-grid {
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  /* Remove right border when stacked */
+  .host-join-panel {
+    border-right: none !important;
+    border-bottom: 3px solid var(--bone);
+  }
+  /* The right options panel should not clip on mobile */
+  .host-options-panel {
+    overflow: visible !important;
+  }
+  .host-options-scroll {
+    padding: 16px !important;
+  }
+  .host-actionbar {
+    padding: 12px 16px !important;
+    gap: 8px !important;
+  }
+  /* Top bar on host dashboard — wrap nicely on small screens */
+  .host-topbar {
+    padding: 10px 14px !important;
+  }
+  .host-topbar h1 {
+    font-size: clamp(16px, 4vw, 22px) !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — POLL MAKER MOBILE (single-column)
+   ============================================================ */
+@media (max-width: 900px) {
+  .pollmaker-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .pollmaker-preview-col {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .pollmaker-builder-col {
+    padding: 20px 14px !important;
+    border-right: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .pollmaker-header {
+    padding: 12px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — HOME PAGE — "How it works" grid (2×2 on mobile)
+   ============================================================ */
+@media (max-width: 480px) {
+  .home-how-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  /* Tighten up the header tag */
+  .home-header-tag p {
+    font-size: 15px !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — RESULTS SCREEN HEADER TOOLBAR
+   ============================================================ */
+@media (max-width: 600px) {
+  .results-header-toolbar {
+    gap: 6px !important;
+  }
+  .results-header-toolbar button {
+    font-size: 11px !important;
+    padding: 4px 7px !important;
+  }
+  /* Stats grid: single column on very small screens */
+  .results-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — IMAGE CROP MODAL
+   ============================================================ */
+@media (max-width: 480px) {
+  .crop-modal-viewfinder {
+    width: min(280px, calc(100vw - 48px)) !important;
+    height: min(280px, calc(100vw - 48px)) !important;
+  }
+  .crop-modal-controls {
+    max-width: min(280px, calc(100vw - 48px)) !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — JOIN PAGE
+   ============================================================ */
+@media (max-width: 480px) {
+  .join-card {
+    padding: 24px 16px !important;
+    margin: 0 !important;
+  }
+}
