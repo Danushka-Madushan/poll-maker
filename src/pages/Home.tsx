@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Trash2 } from 'lucide-react';
+import { Plus, ArrowRight, Trash2, Tv } from 'lucide-react';
 import BatsAnimation from '../components/ui/BatsAnimation';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import { PumpkinIcon, BatIcon, CandleIcon, SkullIcon } from '../components/ui/HalloweenIcons';
@@ -30,7 +30,7 @@ const JaggedTeethEdge: React.FC<{ color: string; bg?: string; flip?: boolean; he
   />
 );
 
-/** Home screen — host entry point (Design Guide §4.1) */
+/** Home screen - host entry point (Design Guide §4.1) */
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -137,7 +137,7 @@ const Home: React.FC = () => {
         }}
       />
 
-      {/* Ambient Floating Bats (§5.5 — Permitted on Home & Result screens) */}
+      {/* Ambient Floating Bats (§5.5 - Permitted on Home & Result screens) */}
       <BatsAnimation />
 
       {/* Top Architectural Hazard Header Bar */}
@@ -170,17 +170,35 @@ const Home: React.FC = () => {
               HALLOWEEN LIVE POLLING SYSTEM
             </span>
           </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'clamp(9px, 2.2vw, 11px)',
-              color: 'var(--ash)',
-              letterSpacing: '0.1em',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            NO SIGN-UP · INSTANT QR
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              className="btn-micro"
+              onClick={() => navigate('/display')}
+              style={{
+                borderColor: 'var(--pumpkin)',
+                color: 'var(--pumpkin)',
+                background: 'var(--void)',
+                gap: 5,
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+              title="Launch Big Screen TV display"
+              aria-label="Launch Big Screen TV display"
+            >
+              <Tv size={12} /> BIG SCREEN
+            </button>
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'clamp(9px, 2.2vw, 11px)',
+                color: 'var(--ash)',
+                letterSpacing: '0.1em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              NO SIGN-UP · INSTANT QR
+            </span>
+          </div>
         </div>
         <JaggedTeethEdge color="var(--bone)" height={7} />
       </div>

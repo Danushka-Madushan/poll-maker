@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Crown,
   Flame,
+  Tv,
 } from 'lucide-react';
 import StatusChip from '../components/ui/StatusChip';
 import HoldButton from '../components/ui/HoldButton';
@@ -135,7 +136,11 @@ const HostDashboard: React.FC = () => {
   };
 
   const openBigScreen = () => {
-    if (pollId) window.open(`/display/${pollId}`, '_blank', 'noopener');
+    if (poll?.joinCode) {
+      window.open(`/display/${formatJoinCode(poll.joinCode)}`, '_blank', 'noopener');
+    } else if (pollId) {
+      window.open(`/display/${pollId}`, '_blank', 'noopener');
+    }
   };
 
   const toggleAudio = () => {
@@ -200,7 +205,7 @@ const HostDashboard: React.FC = () => {
       {/* Main content */}
       <div className="host-dashboard-grid" style={{ flex: 1, display: 'grid', gridTemplateColumns: '280px 1fr', overflow: 'hidden' }}>
 
-        {/* Left — Join panel */}
+        {/* Left - Join panel */}
         <div className="host-join-panel" style={{ borderRight: '3px solid var(--bone)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--ash)', margin: 0 }}>JOIN INFO</h2>
 
@@ -290,9 +295,29 @@ const HostDashboard: React.FC = () => {
               <Copy size={14} /> COPY HOST LINK
             </button>
           </div>
+
+          {/* TV Big Screen Link */}
+          <div style={{ borderTop: '2px solid var(--ash)', paddingTop: 12 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--pumpkin)', margin: '0 0 4px', textTransform: 'uppercase', fontWeight: 700 }}>
+              TV Big Screen URL
+            </p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone)', wordBreak: 'break-all', margin: 0 }}>
+              {`${window.location.origin}/display/${formatJoinCode(poll.joinCode)}`}
+            </p>
+            <button
+              className="btn-ghost"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/display/${formatJoinCode(poll.joinCode)}`);
+                addToast({ message: 'Big Screen link copied!' });
+              }}
+              style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
+            >
+              <Tv size={14} /> COPY BIG SCREEN LINK
+            </button>
+          </div>
         </div>
 
-        {/* Right — Options panel + action bar */}
+        {/* Right - Options panel + action bar */}
         <div className="host-options-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Options */}
           <div className="host-options-scroll" style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
@@ -310,7 +335,7 @@ const HostDashboard: React.FC = () => {
                         'NO VOTES RECORDED'
                       ) : result.winners.length === 1 ? (
                         <>
-                          LEADER: <strong>{options.find((o) => o.id === result.winners[0])?.label} — {options.find((o) => o.id === result.winners[0])?.title}</strong> ({result.tallies.find((t) => t.optionId === result.winners[0])?.count || 0} votes · {result.tallies.find((t) => t.optionId === result.winners[0])?.percentage || 0}%)
+                          LEADER: <strong>{options.find((o) => o.id === result.winners[0])?.label} - {options.find((o) => o.id === result.winners[0])?.title}</strong> ({result.tallies.find((t) => t.optionId === result.winners[0])?.count || 0} votes · {result.tallies.find((t) => t.optionId === result.winners[0])?.percentage || 0}%)
                         </>
                       ) : (
                         <>
@@ -410,7 +435,7 @@ const HostDashboard: React.FC = () => {
                   return (
                     <div key={tally.optionId} className="result-bar">
                       <div className={`result-bar-fill ${isWinner ? '' : 'secondary'}`} style={{ width: `${tally.percentage}%`, background: isWinner ? 'var(--pumpkin)' : 'var(--bone)' }} />
-                      <span className="result-bar-label">{isWinner && '★ '}{opt?.label} — {opt?.title}</span>
+                      <span className="result-bar-label">{isWinner && '★ '}{opt?.label} - {opt?.title}</span>
                       <span className="result-bar-pct">{tally.count} ({tally.percentage}%)</span>
                     </div>
                   );

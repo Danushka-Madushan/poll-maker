@@ -49,6 +49,7 @@ const App: React.FC = () => (
           <Route path="/"                  element={<Home />} />
           <Route path="/create"            element={<PollMaker />} />
           <Route path="/host/:pollId"      element={<HostDashboard />} />
+          <Route path="/display"           element={<BigScreen />} />
           <Route path="/display/:pollId"   element={<BigScreen />} />
           <Route path="/join/:code"        element={<JoinPage />} />
           <Route path="/vote/:pollId"      element={<VoteScreen />} />

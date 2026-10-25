@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Maximize2, Minimize2, Volume2, VolumeX } from 'lucide-react';
+import { Maximize2, Minimize2, Volume2, VolumeX, Tv, ArrowRight, AlertTriangle } from 'lucide-react';
 import BatsAnimation from '../components/ui/BatsAnimation';
 import {
   subscribeToPoll,
@@ -9,13 +9,14 @@ import {
   subscribeToParticipants,
   subscribeToVotes,
   computeResults,
+  resolvePollId,
 } from '../firebase/pollService';
 import type { Poll, PollOption, Participant, Vote } from '../types/poll';
 import { playCreak, playSting, playTick, isMuted, toggleMuted } from '../utils/audio';
 import { formatJoinCode } from '../utils/code';
 
 /* ============================================================================
-   FLAT GEOMETRIC HALLOWEEN SVG MOTIFS (Design Guide §5.5 — Straight-line SVG)
+   FLAT GEOMETRIC HALLOWEEN SVG MOTIFS (Design Guide §5.5 - Straight-line SVG)
    ============================================================================ */
 
 const GeometricCrownSVG: React.FC<{ size?: number; color?: string }> = ({ size = 22, color = 'currentColor' }) => (
@@ -123,9 +124,14 @@ const SegmentedVoteBar: React.FC<{ percentage: number; fillColor: string; border
   );
 };
 
-/** Big Screen display — designed for 16:9 TV/projector, no host controls */
+/** Big Screen display - designed for 16:9 TV/projector, no host controls */
 const BigScreen: React.FC = () => {
-  const { pollId } = useParams<{ pollId: string }>();
+  const { pollId: routeParam } = useParams<{ pollId?: string }>();
+  const navigate = useNavigate();
+  const [activePollId, setActivePollId] = useState<string | null>(null);
+  const [resolving, setResolving] = useState<boolean>(Boolean(routeParam));
+  const [inputCode, setInputCode] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [poll, setPoll] = useState<Omit<Poll, 'options'> | null>(null);
   const [options, setOptions] = useState<PollOption[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -157,6 +163,61 @@ const BigScreen: React.FC = () => {
     setMutedState(m);
   };
 
+  // Resolve code or ID when route param changes
+  useEffect(() => {
+    let isCancelled = false;
+    if (!routeParam) return;
+
+    void (async () => {
+      try {
+        const canonicalId = await resolvePollId(routeParam);
+        if (isCancelled) return;
+        if (canonicalId) {
+          setActivePollId(canonicalId);
+          setErrorMessage('');
+        } else {
+          setActivePollId(null);
+          setErrorMessage(`NO ACTIVE POLL FOUND FOR "${routeParam.toUpperCase()}".`);
+        }
+      } catch {
+        if (isCancelled) return;
+        setActivePollId(null);
+        setErrorMessage('ERROR CONNECTING TO THE CRYPT.');
+      } finally {
+        if (!isCancelled) setResolving(false);
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [routeParam]);
+
+  const handleLaunchByCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const clean = inputCode.trim();
+    if (!clean) return;
+    setResolving(true);
+    setErrorMessage('');
+    try {
+      const canonicalId = await resolvePollId(clean);
+      if (canonicalId) {
+        setPoll(null);
+        setOptions([]);
+        setParticipants([]);
+        setVotes([]);
+        setActivePollId(canonicalId);
+        navigate(`/display/${clean.toUpperCase()}`, { replace: true });
+      } else {
+        setErrorMessage(`NO ACTIVE POLL FOUND FOR CODE "${clean.toUpperCase()}".`);
+      }
+    } catch {
+      setErrorMessage('FAILED TO RESOLVE JOIN CODE.');
+    } finally {
+      setResolving(false);
+    }
+  };
+
   useEffect(() => {
     const handleFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     const handleKey = (e: KeyboardEvent) => {
@@ -180,9 +241,10 @@ const BigScreen: React.FC = () => {
 
   // Real-time Subscriptions
   useEffect(() => {
-    if (!pollId) return;
+    if (!activePollId) return;
+
     const u1 = subscribeToPoll(
-      pollId,
+      activePollId,
       (p) => {
         if (prevStatus.current) {
           if (prevStatus.current === 'lobby' && p.status === 'live') {
@@ -217,19 +279,20 @@ const BigScreen: React.FC = () => {
       },
       undefined,
       () => {
-        window.location.href = '/';
+        setActivePollId(null);
+        setErrorMessage('POLL HAS BEEN TERMINATED.');
       }
     );
-    const u2 = subscribeToOptions(pollId, setOptions);
-    const u3 = subscribeToParticipants(pollId, setParticipants);
-    const u4 = subscribeToVotes(pollId, setVotes);
+    const u2 = subscribeToOptions(activePollId, setOptions);
+    const u3 = subscribeToParticipants(activePollId, setParticipants);
+    const u4 = subscribeToVotes(activePollId, setVotes);
     return () => {
       u1();
       u2();
       u3();
       u4();
     };
-  }, [pollId]);
+  }, [activePollId]);
 
   // Reveal sequence: reveal 3rd place, then 2nd place, then Winner last
   useEffect(() => {
@@ -249,18 +312,6 @@ const BigScreen: React.FC = () => {
     }
   }, [revealStep, result]);
 
-  if (!pollId) return null;
-
-  if (!poll) {
-    return (
-      <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--ash)', fontSize: 28 }}>
-          SUMMONING THE CRYPT…
-        </p>
-      </div>
-    );
-  }
-
   // Halftone 5% background overlay per Design Guide §5.5
   const halftoneBackdrop = (
     <div
@@ -276,7 +327,7 @@ const BigScreen: React.FC = () => {
     />
   );
 
-  // Floating controls for standalone views (Lobby & Closed)
+  // Floating controls for standalone views (Lobby, Closed & Launcher)
   const floatingControls = (
     <div style={{ position: 'fixed', top: 20, right: 24, zIndex: 999, display: 'flex', gap: 8 }}>
       <button
@@ -314,6 +365,250 @@ const BigScreen: React.FC = () => {
       </button>
     </div>
   );
+
+  // If resolving code or doc ID
+  if (resolving && !activePollId) {
+    return (
+      <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {halftoneBackdrop}
+        {floatingControls}
+        <div style={{ textAlign: 'center', zIndex: 1 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--pumpkin)', fontSize: 28, letterSpacing: '0.12em', margin: 0 }}>
+            SUMMONING THE CRYPT…
+          </p>
+          <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--ash)', fontSize: 13, marginTop: 8 }}>
+            RESOLVING POLL IDENTITY
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no active poll ID (portal code entry launcher)
+  if (!activePollId) {
+    return (
+      <div
+        className="display-screen"
+        style={{
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          padding: 24,
+          minHeight: '100vh',
+        }}
+      >
+        {halftoneBackdrop}
+        <BatsAnimation />
+        {floatingControls}
+
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            width: '100%',
+            maxWidth: 580,
+            background: 'var(--ink)',
+            border: '3px solid var(--bone)',
+            boxShadow: '10px 10px 0 var(--pumpkin)',
+          }}
+        >
+          {/* Top hazard bar */}
+          <div className="hazard-stripes" style={{ height: 12, width: '100%' }} />
+
+          <div style={{ padding: '36px 32px 32px' }}>
+            {/* Header Icon + Title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  background: 'var(--void)',
+                  border: '3px solid var(--bone)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '3px 3px 0 var(--pumpkin)',
+                  flexShrink: 0,
+                }}
+              >
+                <Tv size={28} color="var(--pumpkin)" />
+              </div>
+              <div>
+                <h1
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 'clamp(24px, 4vw, 32px)',
+                    color: 'var(--bone)',
+                    margin: 0,
+                    textTransform: 'uppercase',
+                    lineHeight: 1,
+                  }}
+                >
+                  BIG SCREEN TV PORTAL
+                </h1>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 12,
+                    color: 'var(--ash)',
+                    margin: '6px 0 0',
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  CONNECT DISPLAY VIA 6-CHARACTER POLL CODE
+                </p>
+              </div>
+            </div>
+
+            {/* Error banner if code lookup failed */}
+            {errorMessage && (
+              <div
+                style={{
+                  background: 'var(--void)',
+                  border: '2px solid var(--blood)',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  margin: '20px 0',
+                }}
+              >
+                <AlertTriangle size={18} color="var(--blood)" style={{ flexShrink: 0 }} />
+                <p
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 12,
+                    color: 'var(--blood)',
+                    margin: 0,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {errorMessage}
+                </p>
+              </div>
+            )}
+
+            {/* Launch code form */}
+            <form onSubmit={handleLaunchByCode} style={{ marginTop: errorMessage ? 12 : 24 }}>
+              <label
+                htmlFor="bigscreen-code-input"
+                style={{
+                  display: 'block',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--ash)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  marginBottom: 8,
+                }}
+              >
+                ENTER POLL JOIN CODE (E.G. BOO-482)
+              </label>
+
+              <div style={{ display: 'flex', gap: 12, flexDirection: 'column' }}>
+                <input
+                  id="bigscreen-code-input"
+                  type="text"
+                  value={inputCode}
+                  onChange={(e) => {
+                    setInputCode(e.target.value.toUpperCase());
+                    if (errorMessage) setErrorMessage('');
+                  }}
+                  placeholder="BOO-482"
+                  maxLength={10}
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    background: 'var(--void)',
+                    border: '3px solid var(--bone)',
+                    boxShadow: '4px 4px 0 var(--bone)',
+                    padding: '16px 20px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 'clamp(24px, 5vw, 36px)',
+                    fontWeight: 700,
+                    color: 'var(--pumpkin)',
+                    letterSpacing: '0.2em',
+                    textAlign: 'center',
+                    textTransform: 'uppercase',
+                    outline: 'none',
+                  }}
+                />
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={!inputCode.trim() || resolving}
+                  style={{
+                    width: '100%',
+                    padding: '16px 24px',
+                    fontSize: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10,
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  <span>{resolving ? 'CONNECTING…' : 'LAUNCH BIG SCREEN'}</span>
+                  <ArrowRight size={20} />
+                </button>
+              </div>
+            </form>
+
+            {/* Helper tips */}
+            <div
+              style={{
+                marginTop: 24,
+                paddingTop: 18,
+                borderTop: '2px solid var(--ash)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--ash)',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                TIP: PRESS [F] FOR FULLSCREEN
+              </span>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => navigate('/')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 10px',
+                }}
+              >
+                RETURN HOME
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!poll) {
+    return (
+      <div className="display-screen" style={{ alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {halftoneBackdrop}
+        {floatingControls}
+        <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--ash)', fontSize: 28 }}>
+          SUMMONING THE CRYPT…
+        </p>
+      </div>
+    );
+  }
 
   // Integrated controls cluster for header bars (Live & Revealed)
   const headerControls = (
@@ -395,7 +690,7 @@ const BigScreen: React.FC = () => {
         {halftoneBackdrop}
         {floatingControls}
         {transitionBanner}
-        {/* Left 55% — Giant QR */}
+        {/* Left 55% - Giant QR */}
         <div
           style={{
             flex: '0 0 55%',
@@ -427,7 +722,7 @@ const BigScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Right 45% — Info */}
+        {/* Right 45% - Info */}
         <div
           style={{
             flex: '0 0 45%',
@@ -523,7 +818,7 @@ const BigScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom strip — joined count */}
+        {/* Bottom strip - joined count */}
         <div
           style={{
             position: 'absolute',
@@ -953,7 +1248,7 @@ const BigScreen: React.FC = () => {
         {halftoneBackdrop}
         <BatsAnimation />
 
-        {/* Reveal Step 0 — Blackout + "AND THE WINNER IS…" */}
+        {/* Reveal Step 0 - Blackout + "AND THE WINNER IS…" */}
         {!reducedMotion && revealStep === 0 && (
           <div
             style={{
@@ -1029,7 +1324,7 @@ const BigScreen: React.FC = () => {
             </h1>
           </div>
 
-          {/* Center: Hall of Souls Badge — Locked to True Horizontal Center */}
+          {/* Center: Hall of Souls Badge - Locked to True Horizontal Center */}
           <div
             style={{
               display: 'inline-flex',

@@ -2,10 +2,10 @@
  * Firebase Firestore service layer with robust fallback.
  *
  * Collections:
- *   polls/{pollId}           — Poll document
- *   polls/{pollId}/options   — PollOption subcollection
- *   polls/{pollId}/participants/{deviceToken} — Participant
- *   polls/{pollId}/votes/{deviceToken}        — Vote (one per device)
+ *   polls/{pollId}           - Poll document
+ *   polls/{pollId}/options   - PollOption subcollection
+ *   polls/{pollId}/participants/{deviceToken} - Participant
+ *   polls/{pollId}/votes/{deviceToken}        - Vote (one per device)
  *
  * Real-time listeners use onSnapshot for < 1s sync.
  * Includes local BroadcastChannel fallback for offline / pre-activation testing.
@@ -292,6 +292,7 @@ export async function updatePollStatus(
 
 /** Permanently purges a poll from existence in Firestore, local storage, and real-time tabs */
 export async function purgePoll(pollId: string, _hostToken?: string): Promise<void> {
+  void _hostToken;
   // 1. Delete all local cache keys
   try {
     localStorage.removeItem(`hpoll_data_${pollId}`);
@@ -418,6 +419,29 @@ export async function getPollByJoinCode(code: string): Promise<Poll | null> {
   }
 
   return null;
+}
+
+/**
+ * Resolves either a 32-character document ID or a 6-character join code to a canonical poll ID.
+ * Returns null if not found.
+ */
+export async function resolvePollId(codeOrId: string): Promise<string | null> {
+  const trimmed = codeOrId.trim();
+  if (!trimmed) return null;
+
+  // 1. If it looks like a full 32-char Firestore document ID, verify directly
+  if (trimmed.length >= 20) {
+    const directPoll = await getPoll(trimmed);
+    if (directPoll) return directPoll.id;
+  }
+
+  // 2. Try looking up as a 6-character join code (e.g. "BOO-482" or "BOO482")
+  const byCode = await getPollByJoinCode(trimmed);
+  if (byCode) return byCode.id;
+
+  // 3. Fallback: try direct lookup in case doc ID was shorter than 20
+  const fallback = await getPoll(trimmed);
+  return fallback?.id ?? null;
 }
 
 /* ------------------------------------------------------------------ */
