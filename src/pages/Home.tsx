@@ -255,7 +255,6 @@ const Home: React.FC = () => {
 
           {/* One-line pitch inside a sharp offset tag (§4.1 & §9) */}
           <div
-            className="home-header-tag"
             style={{
               marginTop: 18,
               background: 'var(--ink)',
@@ -551,7 +550,7 @@ const Home: React.FC = () => {
             <div style={{ height: 2, flex: 1, background: 'var(--ash)' }} />
           </div>
 
-          <div className="home-how-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {[
               { n: '01', label: 'CREATE', accent: 'var(--pumpkin)', icon: <PumpkinIcon size={28} color="var(--pumpkin)" /> },
               { n: '02', label: 'SCAN', accent: 'var(--bone)', icon: <BatIcon size={30} color="var(--bone)" /> },
