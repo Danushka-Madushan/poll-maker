@@ -8,11 +8,11 @@ interface IconProps {
 }
 
 /**
- * Geometric flat Halloween SVG icons drawn with straight lines and single color
- * adhering strictly to Website Design Guide § 5.5.
+ * Geometric flat Halloween SVG icons drawn strictly with straight-line polygons
+ * adhering to Website Design Guide §5.5.
  */
 
-/** Pumpkin: Octagon body + stem + angular notch cut face */
+/** Pumpkin: Bold octagon body + angled stem + deep carved jack-o'-lantern face */
 export const PumpkinIcon: React.FC<IconProps> = ({
   size = 32,
   color = 'currentColor',
@@ -26,30 +26,43 @@ export const PumpkinIcon: React.FC<IconProps> = ({
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
-    style={style}
+    style={{ flexShrink: 0, ...style }}
     aria-hidden="true"
   >
-    {/* Stem */}
-    <rect x="29" y="4" width="6" height="10" fill={color} />
-    {/* Octagon body */}
+    {/* Angular Stem */}
+    <polygon points="27,3 37,3 35,12 29,12" fill={color} />
+    {/* Wide Octagon Body */}
     <polygon
-      points="20,14 44,14 56,26 56,42 44,54 20,54 8,42 8,26"
+      points="16,12 48,12 60,24 60,46 48,58 16,58 4,46 4,24"
       fill={color}
     />
-    {/* Eyes (angled void triangles/rectangles) */}
-    <polygon points="20,28 26,24 26,32" fill="var(--void)" />
-    <polygon points="44,28 38,24 38,32" fill="var(--void)" />
-    {/* Nose */}
-    <polygon points="32,32 29,38 35,38" fill="var(--void)" />
-    {/* Jagged mouth */}
+    {/*Fierce Angled Triangle Eyes */}
+    <polygon points="14,25 28,29 17,35" fill="var(--void)" />
+    <polygon points="50,25 36,29 47,35" fill="var(--void)" />
+    {/* Center Triangular Nose */}
+    <polygon points="32,31 27,39 37,39" fill="var(--void)" />
+    {/* Bold Jagged Jack-O'-Lantern Grin */}
     <polygon
-      points="20,44 24,42 28,46 32,42 36,46 40,42 44,44 40,48 36,45 32,49 28,45 24,48"
+      points="
+        13,43
+        21,47
+        26,42
+        32,47
+        38,42
+        43,47
+        51,43
+        47,53
+        39,50
+        32,54
+        25,50
+        17,53
+      "
       fill="var(--void)"
     />
   </svg>
 );
 
-/** Ghost: Rectangle head + torso + sharp zig-zag teeth base + square eyes */
+/** Ghost: Chamfered shroud head + 4 deep jagged zig-zag teeth + hollow eyes & howling mouth */
 export const GhostIcon: React.FC<IconProps> = ({
   size = 32,
   color = 'currentColor',
@@ -63,23 +76,35 @@ export const GhostIcon: React.FC<IconProps> = ({
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
-    style={style}
+    style={{ flexShrink: 0, ...style }}
     aria-hidden="true"
   >
-    {/* Ghost body with jagged zig-zag base */}
+    {/* Ghost shroud with sharp chamfered crown & deep 4-tooth zig-zag hem */}
     <polygon
-      points="12,16 20,8 44,8 52,16 52,52 44,44 36,52 28,44 20,52 12,44"
+      points="
+        18,6
+        46,6
+        54,14
+        54,58
+        46,48
+        39,58
+        32,48
+        25,58
+        18,48
+        10,58
+        10,14
+      "
       fill={color}
     />
-    {/* Flat square eyes */}
-    <rect x="22" y="22" width="6" height="8" fill="var(--void)" />
-    <rect x="36" y="22" width="6" height="8" fill="var(--void)" />
-    {/* O-shaped mouth */}
-    <rect x="29" y="34" width="6" height="6" fill="var(--void)" />
+    {/* Angled menacing eyes */}
+    <polygon points="18,20 28,22 28,30 18,28" fill="var(--void)" />
+    <polygon points="46,20 36,22 36,30 46,28" fill="var(--void)" />
+    {/* Jagged howling mouth */}
+    <polygon points="26,35 38,35 40,43 32,41 24,43" fill="var(--void)" />
   </svg>
 );
 
-/** Bat: Angular silhouette wings + ears + eyes */
+/** Bat: Broad predatory vampire bat with wing hooks, 3-point scalloped membrane, ears & eyes */
 export const BatIcon: React.FC<IconProps> = ({
   size = 32,
   color = 'currentColor',
@@ -88,27 +113,72 @@ export const BatIcon: React.FC<IconProps> = ({
 }) => (
   <svg
     width={size}
-    height={Math.round(size * 0.5)}
-    viewBox="0 0 64 32"
+    height={Math.round(size * 0.55)}
+    viewBox="0 0 120 65"
     fill={color}
     xmlns="http://www.w3.org/2000/svg"
     className={className}
-    style={style}
+    style={{ flexShrink: 0, ...style }}
     aria-hidden="true"
   >
-    {/* Body */}
-    <rect x="28" y="10" width="8" height="12" />
-    {/* Left angular wing */}
-    <polygon points="0,6 28,10 28,20 8,24 0,16" />
-    {/* Right angular wing */}
-    <polygon points="64,6 36,10 36,20 56,24 64,16" />
-    {/* Ears */}
-    <polygon points="28,10 30,4 32,10" />
-    <polygon points="36,10 34,4 32,10" />
+    {/* Left Swept Wing (Wing thumb hook + 3 sharp scalloped tips) */}
+    <polygon
+      points="
+        50,24
+        36,12
+        33,5
+        30,13
+        2,4
+        10,24
+        20,21
+        24,36
+        35,31
+        41,44
+        51,38
+      "
+    />
+    {/* Right Swept Wing */}
+    <polygon
+      points="
+        70,24
+        84,12
+        87,5
+        90,13
+        118,4
+        110,24
+        100,21
+        96,36
+        85,31
+        79,44
+        69,38
+      "
+    />
+    {/* Central Armored Torso, Pointed Vampire Ears & Forked Tail */}
+    <polygon
+      points="
+        52,20
+        48,5
+        56,15
+        60,17
+        64,15
+        72,5
+        68,20
+        72,28
+        69,43
+        64,56
+        60,49
+        56,56
+        51,43
+        48,28
+      "
+    />
+    {/* Slanted Glowing Eyes */}
+    <polygon points="52,21 58,24 53,27" fill="var(--void)" />
+    <polygon points="68,21 62,24 67,27" fill="var(--void)" />
   </svg>
 );
 
-/** Skull: Angular cranium + square eye sockets + tooth notches */
+/** Skull: Brutalist cranium + sharp cheekbone cutouts + angled eye sockets + carved teeth */
 export const SkullIcon: React.FC<IconProps> = ({
   size = 32,
   color = 'currentColor',
@@ -122,27 +192,40 @@ export const SkullIcon: React.FC<IconProps> = ({
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
-    style={style}
+    style={{ flexShrink: 0, ...style }}
     aria-hidden="true"
   >
-    {/* Cranium & jaw polygon */}
+    {/* Angular Cranium, Cheekbones & Jaw */}
     <polygon
-      points="16,16 26,8 38,8 48,16 52,30 46,42 42,42 42,54 22,54 22,42 18,42 12,30"
+      points="
+        18,6
+        46,6
+        56,16
+        56,34
+        48,40
+        46,40
+        46,58
+        18,58
+        18,40
+        16,40
+        8,34
+        8,16
+      "
       fill={color}
     />
-    {/* Square eye sockets */}
-    <rect x="20" y="24" width="8" height="8" fill="var(--void)" />
-    <rect x="36" y="24" width="8" height="8" fill="var(--void)" />
-    {/* Inverted triangle nasal cavity */}
-    <polygon points="32,34 29,40 35,40" fill="var(--void)" />
-    {/* Teeth notches */}
-    <rect x="26" y="46" width="3" height="8" fill="var(--void)" />
-    <rect x="31" y="46" width="2" height="8" fill="var(--void)" />
-    <rect x="35" y="46" width="3" height="8" fill="var(--void)" />
+    {/* Temple / Brow Cutouts */}
+    <polygon points="14,22 28,25 28,33 14,31" fill="var(--void)" />
+    <polygon points="50,22 36,25 36,33 50,31" fill="var(--void)" />
+    {/* Inverted Triangle Nasal Cavity */}
+    <polygon points="32,33 27,42 37,42" fill="var(--void)" />
+    {/* Bold Carved Teeth Separators */}
+    <rect x="23" y="47" width="3" height="11" fill="var(--void)" />
+    <rect x="30.5" y="47" width="3" height="11" fill="var(--void)" />
+    <rect x="38" y="47" width="3" height="11" fill="var(--void)" />
   </svg>
 );
 
-/** Candle: Rectangle body + dripping wax notches + diamond flame */
+/** Candle: Pillar body + actual geometric dripping wax notches + holder base + layered diamond flame */
 export const CandleIcon: React.FC<IconProps> = ({
   size = 32,
   color = 'currentColor',
@@ -156,16 +239,27 @@ export const CandleIcon: React.FC<IconProps> = ({
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
-    style={style}
+    style={{ flexShrink: 0, ...style }}
     aria-hidden="true"
   >
-    {/* Candle pillar */}
-    <polygon points="22,24 42,24 42,56 22,56" fill={color} />
-    {/* Base plate */}
-    <rect x="14" y="56" width="36" height="4" fill={color} />
+    {/* Outer Diamond Flame */}
+    <polygon points="32,2 40,14 32,22 24,14" fill="var(--pumpkin)" />
+    {/* Inner Flame Core */}
+    <polygon points="32,8 35,14 32,18 29,14" fill="var(--void)" />
     {/* Wick */}
-    <rect x="31" y="18" width="2" height="6" fill={color} />
-    {/* Diamond flame */}
-    <polygon points="32,4 37,14 32,18 27,14" fill="var(--pumpkin)" />
+    <rect x="30.5" y="21" width="3" height="4" fill={color} />
+    {/* Candle Pillar */}
+    <polygon points="20,25 44,25 44,54 20,54" fill={color} />
+    {/* Geometric Wax Drip Cutouts (Left & Right) */}
+    <polygon
+      points="20,29 26,29 26,41 23,44 20,41"
+      fill="var(--void)"
+    />
+    <polygon
+      points="34,29 40,29 40,36 37,39 34,36"
+      fill="var(--void)"
+    />
+    {/* Altar Holder Base Plate */}
+    <polygon points="12,54 52,54 55,60 9,60" fill={color} />
   </svg>
 );
