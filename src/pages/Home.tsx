@@ -55,22 +55,39 @@ const Home: React.FC = () => {
   const handleResumeCode = () => {
     const trimmed = resumeCode.trim();
     if (!trimmed) return;
-    // Support full URLs, pollId?token=..., or raw pollId
-    try {
-      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+
+    // 1. Full URL check
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      try {
         const url = new URL(trimmed);
         navigate(url.pathname + url.search);
         return;
+      } catch {
+        // Fallback to string split below
       }
-    } catch {
-      // Fallback to string split below
     }
+
+    // 2. Token split check
     const parts = trimmed.split('?token=');
     if (parts.length === 2) {
       navigate(`/host/${parts[0]}?token=${parts[1]}`);
-    } else {
-      navigate(`/host/${trimmed}`);
+      return;
     }
+
+    // 3. Check if it's a 6-character join code (e.g. "BOO-482" or "BOO482")
+    const cleanCode = trimmed.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    if (cleanCode.length === 6) {
+      // Check if host created it on this device
+      const matchingRecent = recent.find((p) => p.pollId === trimmed);
+      if (matchingRecent) {
+        navigate(`/host/${matchingRecent.pollId}?token=${matchingRecent.hostToken}`);
+      } else {
+        navigate(`/join/${cleanCode}`);
+      }
+      return;
+    }
+
+    navigate(`/host/${trimmed}`);
   };
 
   const handlePurgeOne = (e: React.MouseEvent, poll: RecentPoll) => {
@@ -568,7 +585,7 @@ const Home: React.FC = () => {
             <div style={{ height: 2, flex: 1, background: 'var(--ash)' }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <div className="home-how-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {[
               { n: '01', label: 'CREATE', accent: 'var(--pumpkin)', icon: <PumpkinIcon size={28} color="var(--pumpkin)" /> },
               { n: '02', label: 'SCAN', accent: 'var(--bone)', icon: <BatIcon size={30} color="var(--bone)" /> },

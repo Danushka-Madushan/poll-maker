@@ -195,8 +195,15 @@ const BigScreen: React.FC = () => {
 
   const handleLaunchByCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const clean = inputCode.trim();
+    let clean = inputCode.trim();
     if (!clean) return;
+
+    // Support pasted URLs
+    if (clean.includes('/')) {
+      const parts = clean.split('/').filter(Boolean);
+      clean = parts.pop()?.split('?')[0] ?? clean;
+    }
+
     setResolving(true);
     setErrorMessage('');
     try {
@@ -516,7 +523,7 @@ const BigScreen: React.FC = () => {
                     if (errorMessage) setErrorMessage('');
                   }}
                   placeholder="BOO-482"
-                  maxLength={10}
+                  maxLength={120}
                   autoFocus
                   style={{
                     width: '100%',

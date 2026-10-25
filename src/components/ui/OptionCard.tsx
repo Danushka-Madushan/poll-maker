@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
 import type { PollOption } from '../../types/poll';
 
@@ -22,6 +22,15 @@ const OptionCard: React.FC<OptionCardProps> = ({
   votePercent,
 }) => {
   const [preview, setPreview] = useState(false);
+
+  useEffect(() => {
+    if (!preview) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreview(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [preview]);
 
   const handleClick = () => {
     if (!disabled && onClick) onClick();
@@ -115,6 +124,7 @@ const OptionCard: React.FC<OptionCardProps> = ({
               maxWidth: '90vw', maxHeight: '80vh',
               objectFit: 'contain',
               border: '3px solid var(--bone)',
+              boxShadow: '8px 8px 0 var(--pumpkin)',
             }}
           />
           <p style={{

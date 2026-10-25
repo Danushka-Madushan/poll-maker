@@ -423,11 +423,18 @@ export async function getPollByJoinCode(code: string): Promise<Poll | null> {
 
 /**
  * Resolves either a 32-character document ID or a 6-character join code to a canonical poll ID.
+ * Supports raw codes ("BOO-482"), normalized ("BOO482"), 32-char IDs, and full pasted URLs.
  * Returns null if not found.
  */
 export async function resolvePollId(codeOrId: string): Promise<string | null> {
-  const trimmed = codeOrId.trim();
+  let trimmed = codeOrId.trim();
   if (!trimmed) return null;
+
+  // Extract path slug if full URL was pasted (e.g. https://vote.danushka.me/display/BOO-482)
+  if (trimmed.includes('/')) {
+    const parts = trimmed.split('/').filter(Boolean);
+    trimmed = parts.pop()?.split('?')[0] ?? trimmed;
+  }
 
   // 1. If it looks like a full 32-char Firestore document ID, verify directly
   if (trimmed.length >= 20) {
@@ -796,6 +803,7 @@ export async function resolveTieWinner(
   _hostToken: string,
   winnerOptionId: string
 ): Promise<void> {
+  void _hostToken;
   const local = getLocalPoll(pollId);
   if (local) {
     const updated = { ...local, decidedWinnerId: winnerOptionId };
