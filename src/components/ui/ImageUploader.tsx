@@ -27,6 +27,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [dragOver, setDragOver] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string>('');
   const [isCropOpen, setIsCropOpen] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
 
   const processFile = useCallback(async (file: File) => {
     const err = validateImageFile(file);
@@ -87,7 +88,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           overflow: 'hidden',
           background: errorMessage ? 'rgba(224, 40, 60, 0.08)' : undefined,
         }}
-        onClick={() => !value && handleTriggerUpload()}
+        onClick={() => {
+          if (value) {
+            setShowOverlay((v) => !v);
+          } else {
+            handleTriggerUpload();
+          }
+        }}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
@@ -104,10 +111,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
-          capture="environment"
+          accept="image/jpeg,image/png,image/webp,image/*"
           style={{ display: 'none' }}
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = '';
+          }}
         />
 
         {loading ? (
@@ -129,17 +138,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'rgba(13, 11, 16, 0.82)',
+                  background: 'rgba(13, 11, 16, 0.86)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
                   padding: 8,
-                  opacity: 0,
                   transition: 'opacity 120ms',
                 }}
-                className="img-hover-overlay"
+                className={`img-hover-overlay ${showOverlay ? 'show-touch' : ''}`}
               >
                 <button
                   type="button"
@@ -173,9 +181,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                     justifyContent: 'center',
                     gap: 6,
                   }}
-                  title="Upload a new file from device"
+                  title="Choose a new photo from gallery"
                 >
-                  <Upload size={14} /> REPLACE
+                  <Upload size={14} /> CHOOSE NEW PHOTO
                 </button>
               </div>
             )}
@@ -188,21 +196,25 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--blood)', lineHeight: 1.3, fontWeight: 700, textTransform: 'uppercase' }}>
                   {errorMessage}
                 </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone)', textDecoration: 'underline', marginTop: 4 }}>
+                  CHOOSE AGAIN
+                </span>
               </div>
             ) : (
-              <>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 8, textAlign: 'center' }}>
                 <Upload size={28} strokeWidth={2.5} color="var(--ash)" />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'center', lineHeight: 1.4, color: 'var(--bone)' }}>
-                  DROP IMAGE<br />OR CLICK
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'center', lineHeight: 1.4, color: 'var(--bone)', textTransform: 'uppercase' }}>
+                  CHOOSE FROM GALLERY<br /><span style={{ color: 'var(--ash)', fontSize: 10 }}>OR DROP PHOTO</span>
                 </span>
-              </>
+              </div>
             )}
           </>
         )}
 
         <style>{`
-          .img-hover-overlay { opacity: 0 !important; }
-          [role="button"]:hover .img-hover-overlay { opacity: 1 !important; }
+          .img-hover-overlay { opacity: 0 !important; pointer-events: none; }
+          [role="button"]:hover .img-hover-overlay,
+          .img-hover-overlay.show-touch { opacity: 1 !important; pointer-events: auto !important; }
         `}</style>
       </div>
 

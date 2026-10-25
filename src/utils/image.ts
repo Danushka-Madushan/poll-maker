@@ -138,10 +138,22 @@ export function dataUrlSizeKB(dataUrl: string): number {
   return Math.round((base64.length * 3) / 4 / 1024);
 }
 
-/** Validates an uploaded file is image and ≤ 5 MB */
+/** Validates an uploaded file is an image and ≤ 5 MB */
 export function validateImageFile(file: File): string | null {
-  const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  if (!ALLOWED.includes(file.type)) {
+  const mime = (file.type || '').toLowerCase();
+  const ALLOWED = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/pjpeg',
+    'image/x-png',
+  ];
+  const hasValidMime = ALLOWED.includes(mime);
+  const hasValidExt = /\.(jpe?g|png|webp|gif)$/i.test(file.name || '');
+
+  if (!hasValidMime && !hasValidExt) {
     return 'Only JPG, PNG, WebP, or GIF images are allowed.';
   }
   if (file.size > 5 * 1024 * 1024) {
