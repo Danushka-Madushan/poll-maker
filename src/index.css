@@ -327,6 +327,36 @@ a:hover {
   color: var(--bone);
 }
 
+/* Micro button for card headers, compact toolbars */
+.btn-micro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background-color: transparent;
+  color: var(--bone);
+  border: 2px solid var(--bone);
+  padding: 3px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 120ms, color 120ms, background-color 120ms;
+}
+.btn-micro:hover:not(:disabled) {
+  border-color: var(--pumpkin);
+  color: var(--pumpkin);
+}
+.btn-micro:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* ============================================================
    INPUTS
    ============================================================ */
@@ -541,20 +571,26 @@ a:hover {
   left: 0;
   background-color: var(--bone);
   color: var(--void);
+  border-right: 2px solid var(--void);
+  border-bottom: 2px solid var(--void);
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
-  padding: 4px 8px;
+  padding: 3px 8px;
   z-index: 2;
+  line-height: 1.2;
 }
 .option-title-bar {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
   background-color: var(--void);
   border-top: 2px solid var(--bone);
-  padding: 6px 10px;
+  padding: 0 10px;
   font-family: var(--font-display);
   font-size: 13px;
   text-transform: uppercase;
@@ -573,6 +609,8 @@ a:hover {
   height: 32px;
   background-color: var(--pumpkin);
   color: var(--void);
+  border-left: 2px solid var(--pumpkin);
+  border-top: 2px solid var(--pumpkin);
   font-size: 18px;
   font-weight: 900;
   align-items: center;
@@ -815,14 +853,11 @@ input[type="range"].brutalist-slider::-moz-range-thumb {
    RESPONSIVE — MOBILE (≤600px)
    ============================================================ */
 @media (max-width: 600px) {
-  /* Buttons — full-tap-target minimum on mobile */
+  /* Standalone main action buttons — full-tap-target minimum on mobile */
   .btn-primary,
   .btn-danger,
   .btn-secondary {
     min-height: 48px;
-  }
-  .btn-ghost {
-    min-height: 40px;
   }
 
   /* Toast — full-width on very small screens */

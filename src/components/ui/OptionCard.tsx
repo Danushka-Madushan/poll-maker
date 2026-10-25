@@ -70,7 +70,7 @@ const OptionCard: React.FC<OptionCardProps> = ({
 
         {selected && (
           <div className="check-block" aria-hidden="true">
-            <Check size={14} strokeWidth={3} />
+            <Check size={16} strokeWidth={3.5} />
           </div>
         )}
 

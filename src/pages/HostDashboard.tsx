@@ -183,7 +183,7 @@ const HostDashboard: React.FC = () => {
           onClick={toggleAudio}
           aria-label={muted ? 'Unmute sound' : 'Mute sound'}
           title={muted ? 'Sound off' : 'Sound on'}
-          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 38, padding: '0 12px' }}
         >
           {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
@@ -191,7 +191,7 @@ const HostDashboard: React.FC = () => {
           className="btn-secondary"
           onClick={openBigScreen}
           aria-label="Open big screen"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 16px', fontSize: 13 }}
         >
           OPEN BIG SCREEN <ExternalLink size={16} />
         </button>
@@ -206,7 +206,7 @@ const HostDashboard: React.FC = () => {
 
           {/* QR */}
           {(poll.status === 'lobby' || poll.status === 'live') && (
-            <div className="qr-container" style={{ display: 'inline-flex', padding: 8 }}>
+            <div className="qr-container" style={{ display: 'inline-flex', padding: 8, alignSelf: 'center', margin: '0 auto' }}>
               <QRCodeSVG
                 value={joinUrl}
                 size={180}
@@ -431,11 +431,11 @@ const HostDashboard: React.FC = () => {
                   holdingLabel="STARTING HAUNT…"
                   onConfirm={() => changeStatus('live')}
                   className="btn-hold-primary"
-                  style={{ fontSize: 18, padding: '14px 32px' } as React.CSSProperties}
+                  style={{ fontSize: 16, height: 50, padding: '0 28px' } as React.CSSProperties}
                 />
                 <button
                   className="btn-secondary"
-                  style={{ fontSize: 18, padding: '14px 24px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  style={{ fontSize: 15, height: 50, padding: '0 20px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
                   onClick={() => navigate(`/create?edit=${pollId}&token=${hostToken}`)}
                 >
                   <Pencil size={18} /> EDIT OPTIONS
@@ -448,7 +448,7 @@ const HostDashboard: React.FC = () => {
                 holdingLabel="STOPPING POLL…"
                 onConfirm={() => changeStatus('closed')}
                 className="btn-hold-danger"
-                style={{ fontSize: 18, padding: '14px 32px' } as React.CSSProperties}
+                style={{ fontSize: 16, height: 50, padding: '0 28px' } as React.CSSProperties}
               />
             )}
             {poll.status === 'closed' && (
@@ -458,12 +458,12 @@ const HostDashboard: React.FC = () => {
                   holdingLabel="REVEALING RESULTS…"
                   onConfirm={() => changeStatus('revealed')}
                   className="btn-hold-primary"
-                  style={{ fontSize: 18, padding: '14px 32px' } as React.CSSProperties}
+                  style={{ fontSize: 16, height: 50, padding: '0 28px' } as React.CSSProperties}
                 />
                 <button
                   className="btn-secondary"
                   onClick={() => changeStatus('live')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  style={{ fontSize: 15, height: 50, padding: '0 20px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
                   <RotateCcw size={16} /> REOPEN
                 </button>
@@ -474,14 +474,14 @@ const HostDashboard: React.FC = () => {
                 <button
                   className="btn-primary"
                   onClick={() => navigate('/create')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 46, padding: '0 18px', fontSize: 14 }}
                 >
                   <Plus size={16} /> NEW POLL
                 </button>
                 <button
                   className="btn-secondary"
                   onClick={() => navigate(`/results/${pollId}`)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 46, padding: '0 18px', fontSize: 14 }}
                 >
                   VIEW RESULTS PAGE <ExternalLink size={16} />
                 </button>
@@ -490,14 +490,14 @@ const HostDashboard: React.FC = () => {
                     <button
                       className="btn-ghost"
                       onClick={() => exportResultsCSV({ ...poll, options } as Poll, result)}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 46, padding: '0 14px', fontSize: 12 }}
                     >
                       <Download size={14} /> EXPORT CSV
                     </button>
                     <button
                       className="btn-ghost"
                       onClick={() => exportResultPNG({ ...poll, options } as Poll, result)}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 46, padding: '0 14px', fontSize: 12 }}
                     >
                       <FileImage size={14} /> SHAREABLE PNG
                     </button>
@@ -507,7 +507,7 @@ const HostDashboard: React.FC = () => {
                   <button
                     className="btn-secondary"
                     onClick={() => changeStatus('live')}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 46, padding: '0 16px', fontSize: 13 }}
                   >
                     <RotateCcw size={14} /> REOPEN VOTING
                   </button>
@@ -517,7 +517,7 @@ const HostDashboard: React.FC = () => {
             <button
               className="btn-ghost"
               onClick={handlePurge}
-              style={{ marginLeft: 'auto', borderColor: 'var(--blood)', color: 'var(--blood)', fontSize: 13, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              style={{ marginLeft: 'auto', borderColor: 'var(--blood)', color: 'var(--blood)', fontSize: 12, height: 44, padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               title="Permanently delete this poll from existence"
             >
               <Trash2 size={14} /> PURGE POLL

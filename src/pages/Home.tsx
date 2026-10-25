@@ -147,21 +147,24 @@ const Home: React.FC = () => {
           style={{
             background: 'var(--ink)',
             borderBottom: '3px solid var(--bone)',
-            padding: '8px 20px',
+            padding: '8px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 8,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="blink-dot" style={{ width: 10, height: 10, background: 'var(--pumpkin)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span className="blink-dot" style={{ width: 10, height: 10, background: 'var(--pumpkin)', flexShrink: 0 }} />
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 12,
+                fontSize: 'clamp(10px, 2.5vw, 12px)',
                 color: 'var(--bone)',
                 letterSpacing: '0.12em',
                 fontWeight: 700,
+                whiteSpace: 'nowrap',
               }}
             >
               HALLOWEEN LIVE POLLING SYSTEM
@@ -170,9 +173,10 @@ const Home: React.FC = () => {
           <span
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 11,
+              fontSize: 'clamp(9px, 2.2vw, 11px)',
               color: 'var(--ash)',
               letterSpacing: '0.1em',
+              whiteSpace: 'nowrap',
             }}
           >
             NO SIGN-UP · INSTANT QR
@@ -349,7 +353,7 @@ const Home: React.FC = () => {
 
           <div style={{ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Input + GO Row */}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
               <input
                 className="input"
                 placeholder="Paste host link or poll ID…"
@@ -358,7 +362,7 @@ const Home: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleResumeCode();
                 }}
-                style={{ flex: 1 }}
+                style={{ flex: 1, minHeight: 46 }}
               />
               <button
                 className="btn-secondary"
@@ -371,6 +375,7 @@ const Home: React.FC = () => {
                   padding: '0 18px',
                   fontFamily: 'var(--font-display)',
                   fontSize: 15,
+                  minHeight: 46,
                 }}
               >
                 RESUME <ArrowRight size={16} />
@@ -448,6 +453,7 @@ const Home: React.FC = () => {
                         onClick={() => handleResume(poll)}
                         style={{
                           flex: 1,
+                          minWidth: 0,
                           textAlign: 'left',
                           justifyContent: 'flex-start',
                           border: 'none',
@@ -490,26 +496,20 @@ const Home: React.FC = () => {
                             fontFamily: 'var(--font-mono)',
                             paddingLeft: 8,
                             whiteSpace: 'nowrap',
+                            flexShrink: 0,
                           }}
                         >
                           {new Date(poll.createdAt).toLocaleDateString()}
                         </span>
                       </button>
                       <button
-                        className="btn-ghost"
+                        className="btn-micro"
                         onClick={(e) => handlePurgeOne(e, poll)}
                         style={{
-                          padding: '4px 8px',
-                          fontSize: 11,
-                          border: '2px solid var(--blood)',
+                          borderColor: 'var(--blood)',
                           color: 'var(--blood)',
                           background: 'var(--ink)',
-                          fontFamily: 'var(--font-mono)',
-                          fontWeight: 700,
-                          whiteSpace: 'nowrap',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
+                          flexShrink: 0,
                         }}
                         title={`Purge "${poll.title}" everywhere`}
                       >

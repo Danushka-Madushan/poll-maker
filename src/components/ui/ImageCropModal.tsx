@@ -315,7 +315,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
                 className="btn-ghost"
                 onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.1).toFixed(2))))}
                 title="Zoom Out"
-                style={{ padding: 6, display: 'inline-flex', alignItems: 'center' }}
+                style={{ width: 34, height: 34, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <ZoomOut size={16} />
               </button>
@@ -333,7 +333,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
                 className="btn-ghost"
                 onClick={() => setZoom((z) => Math.min(3.0, Number((z + 0.1).toFixed(2))))}
                 title="Zoom In"
-                style={{ padding: 6, display: 'inline-flex', alignItems: 'center' }}
+                style={{ width: 34, height: 34, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <ZoomIn size={16} />
               </button>
@@ -348,7 +348,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
                 <button
                   className="btn-secondary"
                   onClick={() => rotate(-90)}
-                  style={{ fontSize: 12, padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  style={{ fontSize: 12, height: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   title="Rotate 90 degrees counter-clockwise"
                 >
                   <RotateCcw size={14} /> -90°
@@ -356,7 +356,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
                 <button
                   className="btn-secondary"
                   onClick={() => rotate(90)}
-                  style={{ fontSize: 12, padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  style={{ fontSize: 12, height: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   title="Rotate 90 degrees clockwise"
                 >
                   <RotateCw size={14} /> +90°
@@ -366,7 +366,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
               <button
                 className="btn-ghost"
                 onClick={resetAll}
-                style={{ fontSize: 12, padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                style={{ fontSize: 12, height: 36, padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 title="Reset zoom, rotation, and position"
               >
                 <ResetIcon size={14} /> RESET
@@ -391,7 +391,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
             className="btn-secondary"
             onClick={onCancel}
             disabled={applying}
-            style={{ fontSize: 13, padding: '10px 18px' }}
+            style={{ fontSize: 13, height: 44, padding: '0 20px' }}
           >
             CANCEL
           </button>
@@ -401,7 +401,8 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
             disabled={applying}
             style={{
               fontSize: 13,
-              padding: '10px 22px',
+              height: 44,
+              padding: '0 22px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: 8,

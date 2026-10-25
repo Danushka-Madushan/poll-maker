@@ -369,17 +369,17 @@ const PollMaker: React.FC = () => {
                         {opt.label}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', gap: 3 }}>
-                      <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => moveOption(opt.id, -1)} disabled={idx === 0} aria-label="Move up" title="Move up">
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button className="btn-micro" onClick={() => moveOption(opt.id, -1)} disabled={idx === 0} aria-label="Move up" title="Move up">
                         <ChevronUp size={13} />
                       </button>
-                      <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => moveOption(opt.id, 1)} disabled={idx === options.length - 1} aria-label="Move down" title="Move down">
+                      <button className="btn-micro" onClick={() => moveOption(opt.id, 1)} disabled={idx === options.length - 1} aria-label="Move down" title="Move down">
                         <ChevronDown size={13} />
                       </button>
-                      <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => duplicateOption(opt.id)} aria-label="Duplicate" title="Duplicate">
+                      <button className="btn-micro" onClick={() => duplicateOption(opt.id)} aria-label="Duplicate" title="Duplicate">
                         <Copy size={13} />
                       </button>
-                      <button className="btn-ghost" style={{ padding: '3px 5px', borderColor: 'var(--blood)', color: 'var(--blood)' }} onClick={() => removeOption(opt.id)} disabled={options.length <= MIN_OPTIONS} aria-label="Remove" title="Remove">
+                      <button className="btn-micro" style={{ borderColor: 'var(--blood)', color: 'var(--blood)' }} onClick={() => removeOption(opt.id)} disabled={options.length <= MIN_OPTIONS} aria-label="Remove" title="Remove">
                         <Trash2 size={13} />
                       </button>
                     </div>
@@ -439,7 +439,8 @@ const PollMaker: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 10,
-                  minHeight: 220,
+                  minHeight: 280,
+                  height: '100%',
                   cursor: 'pointer',
                   color: 'var(--bone)',
                   boxShadow: '4px 4px 0 rgba(244,238,223,0.2)',

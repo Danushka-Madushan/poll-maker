@@ -102,8 +102,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </div>
           <button
             onClick={onCancel}
-            className="btn-ghost"
-            style={{ padding: '2px 6px', fontSize: 13 }}
+            className="btn-micro"
+            style={{ width: 28, height: 28, padding: 0 }}
             aria-label="Close dialog"
           >
             <X size={16} />
@@ -126,11 +126,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </p>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', alignItems: 'center' }}>
             <button
-              className="btn-ghost"
+              className="btn-secondary"
               onClick={onCancel}
-              style={{ padding: '10px 18px', fontSize: 13 }}
+              style={{ height: 44, padding: '0 20px', fontSize: 13 }}
             >
               {cancelLabel}
             </button>
@@ -142,12 +142,16 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 fontFamily: 'var(--font-mono)',
                 fontSize: 13,
                 fontWeight: 900,
-                padding: '10px 20px',
+                height: 44,
+                padding: '0 22px',
                 border: '3px solid var(--void)',
                 boxShadow: '4px 4px 0 var(--void)',
                 cursor: 'pointer',
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               {confirmLabel}

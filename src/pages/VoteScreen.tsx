@@ -900,16 +900,19 @@ const VoteScreen: React.FC = () => {
             gap: 8,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
             <SkullIcon size={14} color="var(--pumpkin)" />
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 11,
+                fontSize: 'clamp(10px, 2.7vw, 11px)',
                 color: 'var(--bone)',
-                letterSpacing: '0.06em',
+                letterSpacing: '0.04em',
                 textTransform: 'uppercase',
                 fontWeight: 700,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
               TAP CARD TO PICK · TAP PHOTO TO ZOOM
