@@ -605,7 +605,7 @@ const ResultsScreen: React.FC = () => {
                               className="chamfer-frame-lg"
                               style={{
                                 width: 'clamp(160px, 42vw, 220px)',
-                                aspectRatio: '1/1',
+                                height: 'clamp(160px, 42vw, 220px)',
                                 border: '4px solid var(--pumpkin)',
                                 background: 'var(--void)',
                                 boxShadow: '6px 6px 0 var(--pumpkin)',
