@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Maximize2, X } from 'lucide-react';
 import type { PollOption } from '../../types/poll';
 
 interface OptionCardProps {
@@ -36,8 +36,8 @@ const OptionCard: React.FC<OptionCardProps> = ({
     if (!disabled && onClick) onClick();
   };
 
-  const handleImageClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleZoomClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Only open preview when tapping the zoom icon, never hijack card selection
     setPreview(true);
   };
 
@@ -49,28 +49,80 @@ const OptionCard: React.FC<OptionCardProps> = ({
         aria-pressed={selected}
         aria-label={`Option ${option.label}: ${option.title}`}
         onClick={handleClick}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
         className={`option-card ${selected ? 'selected' : ''} ${disabled ? 'cursor-default' : ''}`}
-        style={{ cursor: disabled ? 'default' : 'pointer' }}
+        style={{
+          cursor: disabled ? 'default' : 'pointer',
+          userSelect: 'none',
+          WebkitTapHighlightColor: 'transparent',
+        }}
       >
         {showLabel && (
-          <span className="option-label-chip" aria-hidden="true">{option.label}</span>
+          <span className="option-label-chip" aria-hidden="true">
+            {option.label}
+          </span>
         )}
 
         {option.imageUrl ? (
-          <img
-            src={option.imageUrl}
-            alt={option.title}
-            onClick={handleImageClick}
-            style={{ cursor: 'zoom-in' }}
-          />
+          <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+            <img
+              src={option.imageUrl}
+              alt={option.title}
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+            {/* Dedicated corner zoom button so tapping the photo itself selects the card */}
+            <button
+              type="button"
+              onClick={handleZoomClick}
+              title={`Zoom image for ${option.title}`}
+              aria-label={`Zoom image for ${option.title}`}
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                right: 8,
+                width: 32,
+                height: 32,
+                background: 'var(--void)',
+                color: 'var(--bone)',
+                border: '2px solid var(--bone)',
+                boxShadow: '2px 2px 0 var(--void)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'zoom-in',
+                padding: 0,
+                zIndex: 3,
+                opacity: 0.9,
+              }}
+            >
+              <Maximize2 size={15} />
+            </button>
+          </div>
         ) : (
-          <div style={{
-            width: '100%', height: '100%',
-            background: 'var(--ink)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--ash)', fontFamily: 'var(--font-mono)', fontSize: 13
-          }}>
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              background: 'var(--ink)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--ash)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 13,
+            }}
+          >
             NO IMAGE
           </div>
         )}
@@ -85,18 +137,22 @@ const OptionCard: React.FC<OptionCardProps> = ({
 
         {/* Host-only vote count overlay */}
         {voteCount !== undefined && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            background: 'var(--pumpkin)',
-            color: 'var(--void)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 13,
-            padding: '3px 7px',
-            zIndex: 3,
-          }}>
-            {voteCount}{votePercent !== undefined ? ` · ${votePercent}%` : ''}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              background: 'var(--pumpkin)',
+              color: 'var(--void)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 13,
+              fontWeight: 700,
+              padding: '3px 7px',
+              zIndex: 3,
+            }}
+          >
+            {voteCount}
+            {votePercent !== undefined ? ` · ${votePercent}%` : ''}
           </div>
         )}
       </div>
@@ -109,33 +165,116 @@ const OptionCard: React.FC<OptionCardProps> = ({
           aria-modal="true"
           aria-label={`Preview of ${option.title}`}
           style={{
-            position: 'fixed', inset: 0,
+            position: 'fixed',
+            inset: 0,
             background: 'rgba(13, 11, 16, 0.95)',
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
             zIndex: 10000,
             cursor: 'zoom-out',
           }}
         >
-          <img
-            src={option.imageUrl}
-            alt={option.title}
+          <div
+            onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: '90vw', maxHeight: '80vh',
-              objectFit: 'contain',
-              border: '3px solid var(--bone)',
-              boxShadow: '8px 8px 0 var(--pumpkin)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              maxWidth: '92vw',
+              cursor: 'default',
             }}
-          />
-          <p style={{
-            fontFamily: 'var(--font-display)', fontSize: 20,
-            color: 'var(--bone)', marginTop: 16, textTransform: 'uppercase'
-          }}>
-            {option.label} — {option.title}
-          </p>
-          <p style={{ color: 'var(--ash)', fontSize: 13, fontFamily: 'var(--font-mono)' }}>
-            TAP ANYWHERE TO CLOSE
-          </p>
+          >
+            <div style={{ position: 'relative' }}>
+              <img
+                src={option.imageUrl}
+                alt={option.title}
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '72vh',
+                  objectFit: 'contain',
+                  border: '3px solid var(--bone)',
+                  boxShadow: '8px 8px 0 var(--pumpkin)',
+                  display: 'block',
+                  background: 'var(--void)',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setPreview(false)}
+                aria-label="Close preview"
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  width: 34,
+                  height: 34,
+                  background: 'var(--void)',
+                  color: 'var(--bone)',
+                  border: '2px solid var(--bone)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 22,
+                color: 'var(--bone)',
+                marginTop: 18,
+                marginBottom: 12,
+                textTransform: 'uppercase',
+                textAlign: 'center',
+              }}
+            >
+              {option.label} — {option.title}
+            </p>
+
+            {/* Quick select button right inside the zoom preview */}
+            {!disabled && onClick && (
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  if (!selected) handleClick();
+                  setPreview(false);
+                }}
+                style={{
+                  padding: '10px 24px',
+                  fontSize: 15,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 10,
+                }}
+              >
+                <Check size={18} strokeWidth={3} />
+                {selected ? 'ALREADY SELECTED · CLOSE' : `SELECT OPTION ${option.label}`}
+              </button>
+            )}
+
+            <p
+              onClick={() => setPreview(false)}
+              style={{
+                color: 'var(--ash)',
+                fontSize: 12,
+                fontFamily: 'var(--font-mono)',
+                margin: 0,
+                cursor: 'pointer',
+              }}
+            >
+              TAP OUTSIDE OR PRESS ESC TO CLOSE
+            </p>
+          </div>
         </div>
       )}
     </>
