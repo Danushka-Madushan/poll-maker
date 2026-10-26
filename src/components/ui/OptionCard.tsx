@@ -37,7 +37,7 @@ const OptionCard: React.FC<OptionCardProps> = ({
   };
 
   const handleZoomClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Only open preview when tapping the zoom icon, never hijack card selection
+    e.stopPropagation(); // Only open preview when tapping the corner zoom button
     setPreview(true);
   };
 
@@ -58,103 +58,126 @@ const OptionCard: React.FC<OptionCardProps> = ({
         className={`option-card ${selected ? 'selected' : ''} ${disabled ? 'cursor-default' : ''}`}
         style={{
           cursor: disabled ? 'default' : 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          aspectRatio: 'auto', // Override CSS aspect-ratio on the outer card so the inner image is strictly 1:1
+          height: 'auto',
           userSelect: 'none',
           WebkitTapHighlightColor: 'transparent',
         }}
       >
-        {showLabel && (
-          <span className="option-label-chip" aria-hidden="true">
-            {option.label}
-          </span>
-        )}
+        {/* Bulletproof 1:1 Square Image Box (100% padding-bottom works on every browser) */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: 0,
+            paddingBottom: '100%',
+            background: 'var(--void)',
+            overflow: 'hidden',
+          }}
+        >
+          {showLabel && (
+            <span className="option-label-chip" aria-hidden="true" style={{ zIndex: 3 }}>
+              {option.label}
+            </span>
+          )}
 
-        {option.imageUrl ? (
-          <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-            <img
-              src={option.imageUrl}
-              alt={option.title}
-              draggable={false}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-            {/* Dedicated corner zoom button so tapping the photo itself selects the card */}
-            <button
-              type="button"
-              onClick={handleZoomClick}
-              title={`Zoom image for ${option.title}`}
-              aria-label={`Zoom image for ${option.title}`}
+          {option.imageUrl ? (
+            <>
+              <img
+                src={option.imageUrl}
+                alt={option.title}
+                draggable={false}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleZoomClick}
+                title={`Zoom image for ${option.title}`}
+                aria-label={`Zoom image for ${option.title}`}
+                style={{
+                  position: 'absolute',
+                  bottom: 8,
+                  right: 8,
+                  width: 32,
+                  height: 32,
+                  background: 'var(--void)',
+                  color: 'var(--bone)',
+                  border: '2px solid var(--bone)',
+                  boxShadow: '2px 2px 0 var(--void)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'zoom-in',
+                  padding: 0,
+                  zIndex: 3,
+                  opacity: 0.9,
+                }}
+              >
+                <Maximize2 size={15} />
+              </button>
+            </>
+          ) : (
+            <div
               style={{
                 position: 'absolute',
-                bottom: 8,
-                right: 8,
-                width: 32,
-                height: 32,
-                background: 'var(--void)',
-                color: 'var(--bone)',
-                border: '2px solid var(--bone)',
-                boxShadow: '2px 2px 0 var(--void)',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: 'var(--ink)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: 'zoom-in',
-                padding: 0,
-                zIndex: 3,
-                opacity: 0.9,
+                color: 'var(--ash)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 13,
               }}
             >
-              <Maximize2 size={15} />
-            </button>
-          </div>
-        ) : (
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              background: 'var(--ink)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--ash)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 13,
-            }}
-          >
-            NO IMAGE
-          </div>
-        )}
+              NO IMAGE
+            </div>
+          )}
 
-        <div className="option-title-bar">{option.title}</div>
+          {selected && (
+            <div className="check-block" aria-hidden="true" style={{ zIndex: 3 }}>
+              <Check size={16} strokeWidth={3.5} />
+            </div>
+          )}
 
-        {selected && (
-          <div className="check-block" aria-hidden="true">
-            <Check size={16} strokeWidth={3.5} />
-          </div>
-        )}
+          {/* Host-only vote count overlay */}
+          {voteCount !== undefined && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                background: 'var(--pumpkin)',
+                color: 'var(--void)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 13,
+                fontWeight: 700,
+                padding: '3px 7px',
+                zIndex: 3,
+              }}
+            >
+              {voteCount}
+              {votePercent !== undefined ? ` · ${votePercent}%` : ''}
+            </div>
+          )}
+        </div>
 
-        {/* Host-only vote count overlay */}
-        {voteCount !== undefined && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              background: 'var(--pumpkin)',
-              color: 'var(--void)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 13,
-              fontWeight: 700,
-              padding: '3px 7px',
-              zIndex: 3,
-            }}
-          >
-            {voteCount}
-            {votePercent !== undefined ? ` · ${votePercent}%` : ''}
-          </div>
-        )}
+        <div className="option-title-bar" style={{ position: 'relative', flexShrink: 0 }}>
+          {option.title}
+        </div>
       </div>
 
       {/* Full-screen preview overlay */}
@@ -166,7 +189,10 @@ const OptionCard: React.FC<OptionCardProps> = ({
           aria-label={`Preview of ${option.title}`}
           style={{
             position: 'fixed',
-            inset: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
             background: 'rgba(13, 11, 16, 0.95)',
             display: 'flex',
             flexDirection: 'column',
@@ -239,7 +265,6 @@ const OptionCard: React.FC<OptionCardProps> = ({
               {option.label} — {option.title}
             </p>
 
-            {/* Quick select button right inside the zoom preview */}
             {!disabled && onClick && (
               <button
                 type="button"

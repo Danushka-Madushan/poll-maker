@@ -124,7 +124,7 @@ const SegmentedVoteBar: React.FC<{ percentage: number; fillColor: string; border
   );
 };
 
-/** Big Screen display - designed for 16:9 TV/projector, no host controls */
+/** Big Screen display - responsive across 16:9, 16:10, 4:3, and non-standard Smartboards */
 const BigScreen: React.FC = () => {
   const { pollId: routeParam } = useParams<{ pollId?: string }>();
   const navigate = useNavigate();
@@ -141,6 +141,10 @@ const BigScreen: React.FC = () => {
     Boolean(typeof document !== 'undefined' && document.fullscreenElement)
   );
   const [muted, setMutedState] = useState(isMuted());
+  const [viewport, setViewport] = useState({
+    w: typeof window !== 'undefined' ? window.innerWidth : 1920,
+    h: typeof window !== 'undefined' ? window.innerHeight : 1080,
+  });
   const [transitionOverlay, setTransitionOverlay] = useState<{
     title: string;
     subtitle: string;
@@ -162,6 +166,15 @@ const BigScreen: React.FC = () => {
     const m = toggleMuted();
     setMutedState(m);
   };
+
+  // Track smartboard viewport dimensions dynamically so QR code and squares always fit
+  useEffect(() => {
+    const handleResize = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Resolve code or ID when route param changes
   useEffect(() => {
@@ -198,7 +211,6 @@ const BigScreen: React.FC = () => {
     let clean = inputCode.trim();
     if (!clean) return;
 
-    // Support pasted URLs
     if (clean.includes('/')) {
       const parts = clean.split('/').filter(Boolean);
       clean = parts.pop()?.split('?')[0] ?? clean;
@@ -271,7 +283,6 @@ const BigScreen: React.FC = () => {
           }
         }
 
-        // Trigger reveal sequence when status changes to 'revealed'
         if (prevStatus.current !== 'revealed' && p.status === 'revealed') {
           const isReduced =
             typeof window !== 'undefined' &&
@@ -319,12 +330,15 @@ const BigScreen: React.FC = () => {
     }
   }, [revealStep, result]);
 
-  // Halftone 5% background overlay per Design Guide §5.5
+  // Halftone 5% background overlay per Design Guide §5.5 (uses top/right/bottom/left for legacy WebViews)
   const halftoneBackdrop = (
     <div
       style={{
         position: 'absolute',
-        inset: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
         backgroundImage: 'radial-gradient(var(--bone) 1.5px, transparent 1.5px)',
         backgroundSize: '18px 18px',
         opacity: 0.05,
@@ -336,7 +350,7 @@ const BigScreen: React.FC = () => {
 
   // Floating controls for standalone views (Lobby, Closed & Launcher)
   const floatingControls = (
-    <div style={{ position: 'fixed', top: 20, right: 24, zIndex: 999, display: 'flex', gap: 8 }}>
+    <div style={{ position: 'fixed', top: 16, right: 20, zIndex: 999, display: 'flex', gap: 8 }}>
       <button
         className="btn-ghost"
         onClick={toggleAudio}
@@ -419,11 +433,9 @@ const BigScreen: React.FC = () => {
             boxShadow: '10px 10px 0 var(--pumpkin)',
           }}
         >
-          {/* Top hazard bar */}
           <div className="hazard-stripes" style={{ height: 12, width: '100%' }} />
 
           <div style={{ padding: '36px 32px 32px' }}>
-            {/* Header Icon + Title */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
               <div
                 style={{
@@ -467,7 +479,6 @@ const BigScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Error banner if code lookup failed */}
             {errorMessage && (
               <div
                 style={{
@@ -496,7 +507,6 @@ const BigScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Launch code form */}
             <form onSubmit={handleLaunchByCode} style={{ marginTop: errorMessage ? 12 : 24 }}>
               <label
                 htmlFor="bigscreen-code-input"
@@ -564,7 +574,6 @@ const BigScreen: React.FC = () => {
               </div>
             </form>
 
-            {/* Helper tips */}
             <div
               style={{
                 marginTop: 24,
@@ -690,154 +699,237 @@ const BigScreen: React.FC = () => {
     </div>
   );
 
-  /* ---- LOBBY STATE ---- */
+  /* ---- LOBBY STATE (SMARTBOARD-SAFE FLEX LAYOUT — ZERO OVERLAP OR WRAPPING) ---- */
   if (poll.status === 'lobby') {
+    // Dynamically calculate QR size so it fits both narrow/tall smartboards and widescreens
+    const qrSize = Math.max(200, Math.min(viewport.w * 0.36, viewport.h * 0.56, 480));
+
     return (
-      <div className="display-screen" style={{ flexDirection: 'row', position: 'relative' }}>
+      <div
+        className="display-screen"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          padding: 0,
+          gap: 0,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
         {halftoneBackdrop}
         {floatingControls}
         {transitionBanner}
-        {/* Left 55% - Giant QR */}
+
+        {/* Top Main Split Area (Takes remaining height above the footer strip) */}
         <div
           style={{
-            flex: '0 0 55%',
+            flex: 1,
+            minHeight: 0,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 48,
-            borderRight: '4px solid var(--bone)',
+            flexDirection: 'row',
             position: 'relative',
             zIndex: 1,
           }}
         >
+          {/* Left 48% - Giant QR */}
           <div
-            className="qr-container"
             style={{
-              padding: 28,
-              background: 'var(--bone)',
-              border: '4px solid var(--void)',
-              boxShadow: '12px 12px 0 var(--pumpkin)',
+              flex: '0 0 48%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'clamp(16px, 2.5vw, 40px)',
+              borderRight: '4px solid var(--bone)',
+              boxSizing: 'border-box',
             }}
           >
-            <QRCodeSVG
-              value={joinUrl}
-              size={Math.min(window.innerHeight * 0.55, 500)}
-              level="M"
-              bgColor="#F4EEDF"
-              fgColor="#0D0B10"
-            />
-          </div>
-        </div>
-
-        {/* Right 45% - Info */}
-        <div
-          style={{
-            flex: '0 0 45%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            padding: 48,
-            gap: 32,
-            position: 'relative',
-            zIndex: 1,
-          }}
-        >
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-            <GeometricPumpkinSVG size={32} color="var(--pumpkin)" />
-            <span
+            <div
+              className="qr-container"
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 20,
-                color: 'var(--pumpkin)',
-                letterSpacing: '0.14em',
-                fontWeight: 700,
+                padding: 'clamp(16px, 2vw, 28px)',
+                background: 'var(--bone)',
+                border: '4px solid var(--void)',
+                boxShadow: '12px 12px 0 var(--pumpkin)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              LIVE HALLOWEEN POLL
-            </span>
+              <QRCodeSVG
+                value={joinUrl}
+                size={qrSize}
+                level="M"
+                bgColor="#F4EEDF"
+                fgColor="#0D0B10"
+              />
+            </div>
           </div>
 
-          <h1
+          {/* Right 52% - Poll Info, Single-Line Join Code & High-Contrast Link Box */}
+          <div
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(36px, 5vw, 80px)',
-              color: 'var(--bone)',
-              lineHeight: 0.92,
-              textTransform: 'uppercase',
-              margin: 0,
+              flex: '0 0 52%',
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              padding: 'clamp(20px, 3vw, 44px)',
+              gap: 'clamp(12px, 2.2vh, 26px)',
+              boxSizing: 'border-box',
             }}
           >
-            {poll.title}
-          </h1>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <GeometricPumpkinSVG size={28} color="var(--pumpkin)" />
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'clamp(14px, 1.4vw, 20px)',
+                  color: 'var(--pumpkin)',
+                  letterSpacing: '0.14em',
+                  fontWeight: 700,
+                }}
+              >
+                LIVE HALLOWEEN POLL
+              </span>
+            </div>
 
-          <div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(28px, min(4.2vw, 6.5vh), 72px)',
+                color: 'var(--bone)',
+                lineHeight: 0.94,
+                textTransform: 'uppercase',
+                margin: 0,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {poll.title}
+            </h1>
+
             <p
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(28px, 4vw, 56px)',
+                fontSize: 'clamp(22px, min(3vw, 4.8vh), 46px)',
                 color: 'var(--pumpkin)',
                 letterSpacing: '-0.01em',
                 lineHeight: 1,
                 margin: 0,
               }}
             >
-              SCAN TO VOTE.
-              <br />
-              IF YOU DARE.
+              SCAN TO VOTE. IF YOU DARE.
             </p>
-          </div>
 
-          <div style={{ borderTop: '4px solid var(--bone)', paddingTop: 24 }}>
-            <p
+            {/* Join Code & URL Section — Guaranteed Single-Line Code & High-Visibility URL */}
+            <div
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 28,
-                color: 'var(--ash)',
-                marginBottom: 8,
-                letterSpacing: '0.08em',
+                borderTop: '4px solid var(--bone)',
+                paddingTop: 'clamp(12px, 2vh, 22px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'clamp(8px, 1.4vh, 14px)',
+                minWidth: 0,
               }}
             >
-              JOIN CODE
-            </p>
-            <p
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'clamp(48px, 7vw, 96px)',
-                color: 'var(--bone)',
-                letterSpacing: '0.16em',
-                margin: 0,
-                fontWeight: 700,
-              }}
-            >
-              {formatJoinCode(poll.joinCode)}
-            </p>
-            <p
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 28,
-                color: 'var(--ash)',
-                marginTop: 12,
-                wordBreak: 'break-all',
-              }}
-            >
-              {joinUrl}
-            </p>
+              <div>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 'clamp(14px, 1.5vw, 22px)',
+                    color: 'var(--ash)',
+                    margin: '0 0 4px',
+                    letterSpacing: '0.1em',
+                    fontWeight: 700,
+                  }}
+                >
+                  JOIN CODE
+                </p>
+                {/* Locked to 1 row (`whiteSpace: 'nowrap'`) so BOO-482 never splits! */}
+                <div
+                  style={{
+                    display: 'inline-block',
+                    background: 'var(--void)',
+                    border: '3px solid var(--pumpkin)',
+                    boxShadow: '6px 6px 0 var(--pumpkin)',
+                    padding: '6px 20px',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 'clamp(32px, min(4.6vw, 7.2vh), 78px)',
+                      color: 'var(--bone)',
+                      letterSpacing: '0.12em',
+                      margin: 0,
+                      fontWeight: 900,
+                      whiteSpace: 'nowrap',
+                      lineHeight: 1.05,
+                    }}
+                  >
+                    {formatJoinCode(poll.joinCode)}
+                  </p>
+                </div>
+              </div>
+
+              {/* High-Contrast URL Banner — Always Visible Above Footer */}
+              <div
+                style={{
+                  background: 'var(--ink)',
+                  border: '2px solid var(--bone)',
+                  boxShadow: '4px 4px 0 var(--bone)',
+                  padding: '8px 14px',
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'block',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    color: 'var(--pumpkin)',
+                    letterSpacing: '0.1em',
+                    fontWeight: 700,
+                    marginBottom: 2,
+                  }}
+                >
+                  DIRECT LINK:
+                </span>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 'clamp(14px, min(1.8vw, 2.6vh), 24px)',
+                    color: 'var(--bone)',
+                    margin: 0,
+                    fontWeight: 700,
+                    wordBreak: 'break-all',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {joinUrl}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Bottom strip - joined count */}
-        <div
+        {/* Dedicated Flex Footer Strip — Never Overlaps Right Column Content */}
+        <footer
           style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
+            flexShrink: 0,
             borderTop: '4px solid var(--bone)',
             background: 'var(--ink)',
-            padding: '16px 48px',
+            padding: '14px 36px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            position: 'relative',
             zIndex: 2,
           }}
         >
@@ -846,7 +938,7 @@ const BigScreen: React.FC = () => {
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 'clamp(28px, 3.5vw, 44px)',
+                fontSize: 'clamp(22px, 2.8vw, 38px)',
                 color: 'var(--toxic)',
                 letterSpacing: '0.08em',
                 fontWeight: 700,
@@ -855,28 +947,52 @@ const BigScreen: React.FC = () => {
               {Math.max(participants.length, votes.length)} JOINED
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--ash)' }}>
-            <GeometricBatSVG size={28} color="var(--pumpkin)" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 24, letterSpacing: '0.1em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bone)' }}>
+            <GeometricBatSVG size={26} color="var(--pumpkin)" />
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'clamp(14px, 1.6vw, 22px)',
+                letterSpacing: '0.1em',
+                fontWeight: 700,
+              }}
+            >
               WAITING FOR HOST TO START…
             </span>
           </div>
-        </div>
+        </footer>
       </div>
     );
   }
 
-  /* ---- LIVE STATE ---- */
+  /* ---- LIVE STATE (BULLETPROOF 1:1 SQUARE CARDS ON ANY SMARTBOARD) ---- */
   if (poll.status === 'live') {
+    // Dynamically size grid columns based on how many options exist so cards stay big & square
+    const count = options.length;
+    const minColWidth = count <= 4 ? 280 : count <= 8 ? 220 : 185;
+
     return (
-      <div className="display-screen" style={{ padding: 0, gap: 0, position: 'relative' }}>
+      <div
+        className="display-screen"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          padding: 0,
+          gap: 0,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
         {halftoneBackdrop}
         {transitionBanner}
-        <div className="hazard-stripes" style={{ height: 14, width: '100%', flexShrink: 0 }} />
+        <div className="hazard-stripes" style={{ height: 12, width: '100%', flexShrink: 0 }} />
 
+        {/* Header */}
         <div
           style={{
-            padding: '18px 32px',
+            flexShrink: 0,
+            padding: '14px 28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -884,39 +1000,43 @@ const BigScreen: React.FC = () => {
             background: 'var(--ink)',
             position: 'relative',
             zIndex: 2,
+            gap: 16,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <GeometricPumpkinSVG size={32} color="var(--pumpkin)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+            <GeometricPumpkinSVG size={30} color="var(--pumpkin)" />
             <h1
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(28px, 4vw, 56px)',
+                fontSize: 'clamp(24px, 3.2vw, 48px)',
                 color: 'var(--bone)',
                 margin: 0,
                 textTransform: 'uppercase',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
               {poll.title}
             </h1>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                gap: 10,
                 background: 'var(--void)',
                 border: '3px solid var(--toxic)',
-                padding: '6px 16px',
+                padding: '6px 14px',
                 boxShadow: '4px 4px 0 var(--toxic)',
               }}
             >
-              <span className="blink-dot" style={{ width: 14, height: 14, background: 'var(--toxic)' }} />
+              <span className="blink-dot" style={{ width: 12, height: 12, background: 'var(--toxic)' }} />
               <span
                 style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 24,
+                  fontSize: 'clamp(16px, 1.6vw, 22px)',
                   color: 'var(--toxic)',
                   letterSpacing: '0.08em',
                   fontWeight: 700,
@@ -929,13 +1049,17 @@ const BigScreen: React.FC = () => {
           </div>
         </div>
 
+        {/* Options Grid — Uses alignContent: 'start' + paddingBottom: '100%' so cards NEVER stretch into rectangles! */}
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-            gap: 24,
-            padding: 32,
+            gridTemplateColumns: `repeat(auto-fill, minmax(${minColWidth}px, 1fr))`,
+            alignContent: 'start',
+            alignItems: 'start',
+            gap: 20,
+            padding: '24px 28px',
             overflowY: 'auto',
             position: 'relative',
             zIndex: 1,
@@ -956,11 +1080,29 @@ const BigScreen: React.FC = () => {
                   position: 'relative',
                 }}
               >
-                <div style={{ aspectRatio: '1/1', overflow: 'hidden', position: 'relative' }}>
+                {/* Intrinsic 1:1 Square Wrapper (Works on 100% of old & new Smartboard browsers) */}
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 0,
+                    paddingBottom: '100%',
+                    background: 'var(--void)',
+                    overflow: 'hidden',
+                  }}
+                >
                   <img
                     src={opt.imageUrl}
                     alt={opt.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
                   />
                   {/* Top-left solid label chip per Design Guide §5.6 */}
                   <div
@@ -974,27 +1116,31 @@ const BigScreen: React.FC = () => {
                       borderBottom: '3px solid var(--void)',
                       padding: '4px 12px',
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: 900,
+                      zIndex: 2,
                     }}
                   >
                     {opt.label}
                   </div>
                 </div>
+
+                {/* Option Title Footer Bar */}
                 <div
                   style={{
-                    padding: '12px 16px',
+                    padding: '10px 14px',
                     borderTop: '4px solid var(--bone)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    gap: 8,
                     background: 'var(--ink)',
                   }}
                 >
                   <span
                     style={{
                       fontFamily: 'var(--font-display)',
-                      fontSize: 28,
+                      fontSize: 'clamp(18px, 1.8vw, 24px)',
                       color: 'var(--bone)',
                       textTransform: 'uppercase',
                       overflow: 'hidden',
@@ -1008,9 +1154,10 @@ const BigScreen: React.FC = () => {
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 28,
+                        fontSize: 'clamp(18px, 1.8vw, 24px)',
                         color: 'var(--pumpkin)',
-                        fontWeight: 700,
+                        fontWeight: 900,
+                        flexShrink: 0,
                       }}
                     >
                       {tally.count}
@@ -1022,10 +1169,12 @@ const BigScreen: React.FC = () => {
           })}
         </div>
 
+        {/* Footer */}
         <div
           style={{
+            flexShrink: 0,
             borderTop: '4px solid var(--bone)',
-            padding: '16px 32px',
+            padding: '14px 28px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -1034,10 +1183,10 @@ const BigScreen: React.FC = () => {
             zIndex: 2,
           }}
         >
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--bone)', fontWeight: 700 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(20px, 2vw, 28px)', color: 'var(--bone)', fontWeight: 700 }}>
             {votes.length} VOTES CAST
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--pumpkin)', fontWeight: 700 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(20px, 2vw, 28px)', color: 'var(--pumpkin)', fontWeight: 700 }}>
             JOIN CODE: {formatJoinCode(poll.joinCode)}
           </span>
         </div>
@@ -1148,6 +1297,13 @@ const BigScreen: React.FC = () => {
 
     const runners = result.tallies.slice(3);
 
+    // Explicit pixel square dimensions for podium portraits so even old browsers without `min(vw, vh)` render 1:1 squares
+    const sidePortraitPx = Math.round(Math.max(105, Math.min(viewport.w * 0.13, viewport.h * 0.2, 210)));
+    const winnerPortraitPx =
+      result.winners.length > 1
+        ? Math.round(Math.max(95, Math.min(viewport.w * 0.11, viewport.h * 0.17, 175)))
+        : Math.round(Math.max(130, Math.min(viewport.w * 0.155, viewport.h * 0.235, 250)));
+
     // Unmasked Crypt Monolith Placeholder (during reveal sequence)
     const renderCryptMonolith = (
       badge: string,
@@ -1157,7 +1313,7 @@ const BigScreen: React.FC = () => {
     ) => (
       <div
         style={{
-          flex: isCenter ? '1.15 1 360px' : '1 1 300px',
+          flex: isCenter ? '1.15 1 320px' : '1 1 260px',
           maxWidth: isCenter ? 470 : 380,
           height: heightPct,
           background: 'var(--ink)',
@@ -1251,7 +1407,6 @@ const BigScreen: React.FC = () => {
           flexDirection: 'column',
         }}
       >
-        {/* Subtle 5% Halftone Pattern + Floating Bats (§5.5) */}
         {halftoneBackdrop}
         <BatsAnimation />
 
@@ -1260,7 +1415,10 @@ const BigScreen: React.FC = () => {
           <div
             style={{
               position: 'fixed',
-              inset: 0,
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
               background: 'var(--void)',
               display: 'flex',
               alignItems: 'center',
@@ -1311,7 +1469,6 @@ const BigScreen: React.FC = () => {
             zIndex: 10,
           }}
         >
-          {/* Left: Poll Title + Geometric Pumpkin */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, justifySelf: 'start' }}>
             <GeometricPumpkinSVG size={26} color="var(--pumpkin)" />
             <h1
@@ -1331,7 +1488,6 @@ const BigScreen: React.FC = () => {
             </h1>
           </div>
 
-          {/* Center: Hall of Souls Badge - Locked to True Horizontal Center */}
           <div
             style={{
               display: 'inline-flex',
@@ -1360,24 +1516,22 @@ const BigScreen: React.FC = () => {
             <GeometricBatSVG size={22} color="var(--pumpkin)" />
           </div>
 
-          {/* Right: Audio & Fullscreen Controls */}
           {headerControls}
         </header>
 
-        {/* Jagged Teeth Valance Under Top Bar (§5.5) */}
         <div style={{ position: 'relative', zIndex: 9, flexShrink: 0 }}>
           <JaggedTeethEdge color="var(--bone)" height={8} />
         </div>
 
-        {/* Theatrical Monolith Podium Stage (Symmetrical Wings & Elevated Center) */}
+        {/* Theatrical Monolith Podium Stage */}
         <main
           style={{
             flex: 1,
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
-            gap: 'clamp(20px, 2.6vw, 40px)',
-            padding: '10px 32px 18px',
+            gap: 'clamp(16px, 2.4vw, 36px)',
+            padding: '10px 28px 18px',
             minHeight: 0,
             position: 'relative',
             zIndex: 2,
@@ -1388,7 +1542,7 @@ const BigScreen: React.FC = () => {
             (isSecondRevealed && opt2 && tally2 ? (
               <div
                 style={{
-                  flex: '1 1 300px',
+                  flex: '1 1 260px',
                   maxWidth: 380,
                   height: '85%',
                   display: 'flex',
@@ -1397,7 +1551,6 @@ const BigScreen: React.FC = () => {
                   minHeight: 0,
                 }}
               >
-                {/* 2nd Place Upper Altar Box */}
                 <div
                   style={{
                     flex: 1,
@@ -1410,7 +1563,6 @@ const BigScreen: React.FC = () => {
                     overflow: 'hidden',
                   }}
                 >
-                  {/* Header Strip */}
                   <div
                     style={{
                       background: 'var(--bone)',
@@ -1433,7 +1585,6 @@ const BigScreen: React.FC = () => {
                   </div>
                   <JaggedTeethEdge color="var(--bone)" height={7} />
 
-                  {/* Portrait & Title Body */}
                   <div
                     style={{
                       flex: 1,
@@ -1446,13 +1597,13 @@ const BigScreen: React.FC = () => {
                       gap: 8,
                     }}
                   >
-                    {/* Chamfered Portrait with Corner Option Chip */}
-                    <div style={{ position: 'relative', display: 'inline-flex', flexShrink: 1, minHeight: 0 }}>
+                    {/* Explicit Pixel 1:1 Square Frame */}
+                    <div style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
                       <div
                         className="chamfer-frame"
                         style={{
-                          width: 'min(13.5vw, 20.5vh)',
-                          height: 'min(13.5vw, 20.5vh)',
+                          width: sidePortraitPx,
+                          height: sidePortraitPx,
                           border: '3px solid var(--bone)',
                           background: 'var(--void)',
                           boxShadow: '4px 4px 0 var(--bone)',
@@ -1465,7 +1616,6 @@ const BigScreen: React.FC = () => {
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       </div>
-                      {/* Corner Option Label Chip */}
                       <div
                         style={{
                           position: 'absolute',
@@ -1485,7 +1635,6 @@ const BigScreen: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Title & Badge Group */}
                     <div
                       style={{
                         display: 'flex',
@@ -1499,7 +1648,7 @@ const BigScreen: React.FC = () => {
                       <h2
                         style={{
                           fontFamily: 'var(--font-display)',
-                          fontSize: 'clamp(22px, 2.4vw, 32px)',
+                          fontSize: 'clamp(20px, 2.2vw, 30px)',
                           color: 'var(--bone)',
                           margin: 0,
                           textTransform: 'uppercase',
@@ -1542,7 +1691,7 @@ const BigScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 2nd Place Simplified Pedestal Base (Stripes + Bar + Vote Box Only) */}
+                {/* 2nd Place Simplified Pedestal Base */}
                 <div
                   style={{
                     background: 'var(--ink)',
@@ -1572,12 +1721,13 @@ const BigScreen: React.FC = () => {
                       padding: '8px 14px',
                       width: '100%',
                       textAlign: 'center',
+                      boxSizing: 'border-box',
                     }}
                   >
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 'clamp(17px, 1.9vw, 24px)',
+                        fontSize: 'clamp(16px, 1.8vw, 24px)',
                         color: 'var(--bone)',
                         fontWeight: 900,
                       }}
@@ -1595,7 +1745,7 @@ const BigScreen: React.FC = () => {
           {isFirstRevealed && opt1 && tally1 ? (
             <div
               style={{
-                flex: '1.15 1 360px',
+                flex: '1.15 1 320px',
                 maxWidth: 470,
                 height: '97%',
                 display: 'flex',
@@ -1605,7 +1755,6 @@ const BigScreen: React.FC = () => {
                 zIndex: 3,
               }}
             >
-              {/* Winner Upper Altar Box */}
               <div
                 style={{
                   flex: 1,
@@ -1618,7 +1767,6 @@ const BigScreen: React.FC = () => {
                   overflow: 'hidden',
                 }}
               >
-                {/* Crown Banner */}
                 <div
                   style={{
                     background: 'var(--pumpkin)',
@@ -1644,7 +1792,6 @@ const BigScreen: React.FC = () => {
                 </div>
                 <JaggedTeethEdge color="var(--pumpkin)" height={9} />
 
-                {/* Winner Portrait & Identity Body */}
                 <div
                   style={{
                     flex: 1,
@@ -1657,22 +1804,18 @@ const BigScreen: React.FC = () => {
                     gap: 8,
                   }}
                 >
-                  {/* Hero Chamfered Octagon Portrait */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexShrink: 1, minHeight: 0 }}>
+                  {/* Explicit Pixel 1:1 Square Winner Portrait(s) */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexShrink: 0 }}>
                     {result.winners.slice(0, 2).map((wId) => {
                       const opt = options.find((o) => o.id === wId);
                       if (!opt) return null;
-                      const boxDim =
-                        result.winners.length > 1
-                          ? 'min(11.5vw, 18vh)'
-                          : 'min(16vw, 24vh)';
                       return (
                         <div key={wId} style={{ position: 'relative', display: 'inline-flex' }}>
                           <div
                             className="chamfer-frame-lg"
                             style={{
-                              width: boxDim,
-                              height: boxDim,
+                              width: winnerPortraitPx,
+                              height: winnerPortraitPx,
                               border: '4px solid var(--pumpkin)',
                               background: 'var(--void)',
                               boxShadow: '6px 6px 0 var(--pumpkin)',
@@ -1690,7 +1833,6 @@ const BigScreen: React.FC = () => {
                               }}
                             />
                           </div>
-                          {/* Top-left Solid Option Label Chip */}
                           <div
                             style={{
                               position: 'absolute',
@@ -1713,7 +1855,6 @@ const BigScreen: React.FC = () => {
                     })}
                   </div>
 
-                  {/* Winner Title & Contestant Chip Group */}
                   <div
                     style={{
                       display: 'flex',
@@ -1727,7 +1868,7 @@ const BigScreen: React.FC = () => {
                     <h2
                       style={{
                         fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(26px, 3vw, 40px)',
+                        fontSize: 'clamp(24px, 2.8vw, 38px)',
                         color: 'var(--bone)',
                         margin: 0,
                         textTransform: 'uppercase',
@@ -1776,7 +1917,7 @@ const BigScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Winner Simplified Pedestal Base (Stripes + Bar + Vote Box Only) */}
+              {/* Winner Simplified Pedestal Base */}
               <div
                 style={{
                   background: 'var(--ink)',
@@ -1807,12 +1948,13 @@ const BigScreen: React.FC = () => {
                     padding: '8px 18px',
                     width: '100%',
                     textAlign: 'center',
+                    boxSizing: 'border-box',
                   }}
                 >
                   <span
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 'clamp(20px, 2.3vw, 30px)',
+                      fontSize: 'clamp(18px, 2.2vw, 30px)',
                       color: 'var(--toxic)',
                       fontWeight: 900,
                     }}
@@ -1831,7 +1973,7 @@ const BigScreen: React.FC = () => {
             (isThirdRevealed && opt3 && tally3 ? (
               <div
                 style={{
-                  flex: '1 1 300px',
+                  flex: '1 1 260px',
                   maxWidth: 380,
                   height: '85%',
                   display: 'flex',
@@ -1840,7 +1982,6 @@ const BigScreen: React.FC = () => {
                   minHeight: 0,
                 }}
               >
-                {/* 3rd Place Upper Altar Box */}
                 <div
                   style={{
                     flex: 1,
@@ -1887,13 +2028,13 @@ const BigScreen: React.FC = () => {
                       gap: 8,
                     }}
                   >
-                    {/* Chamfered Octagonal Portrait Frame */}
-                    <div style={{ position: 'relative', display: 'inline-flex', flexShrink: 1, minHeight: 0 }}>
+                    {/* Explicit Pixel 1:1 Square Frame */}
+                    <div style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
                       <div
                         className="chamfer-frame"
                         style={{
-                          width: 'min(13.5vw, 20.5vh)',
-                          height: 'min(13.5vw, 20.5vh)',
+                          width: sidePortraitPx,
+                          height: sidePortraitPx,
                           border: '3px solid var(--ash)',
                           background: 'var(--void)',
                           boxShadow: '4px 4px 0 var(--ash)',
@@ -1906,7 +2047,6 @@ const BigScreen: React.FC = () => {
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       </div>
-                      {/* Corner Option Label Chip */}
                       <div
                         style={{
                           position: 'absolute',
@@ -1926,7 +2066,6 @@ const BigScreen: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Title & Badge Group */}
                     <div
                       style={{
                         display: 'flex',
@@ -1940,7 +2079,7 @@ const BigScreen: React.FC = () => {
                       <h2
                         style={{
                           fontFamily: 'var(--font-display)',
-                          fontSize: 'clamp(22px, 2.4vw, 32px)',
+                          fontSize: 'clamp(20px, 2.2vw, 30px)',
                           color: 'var(--bone)',
                           margin: 0,
                           textTransform: 'uppercase',
@@ -1983,7 +2122,7 @@ const BigScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 3rd Place Simplified Pedestal Base (Stripes + Bar + Vote Box Only) */}
+                {/* 3rd Place Simplified Pedestal Base */}
                 <div
                   style={{
                     background: 'var(--ink)',
@@ -2013,12 +2152,13 @@ const BigScreen: React.FC = () => {
                       padding: '8px 14px',
                       width: '100%',
                       textAlign: 'center',
+                      boxSizing: 'border-box',
                     }}
                   >
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 'clamp(17px, 1.9vw, 24px)',
+                        fontSize: 'clamp(16px, 1.8vw, 24px)',
                         color: 'var(--ash)',
                         fontWeight: 900,
                       }}
@@ -2033,7 +2173,7 @@ const BigScreen: React.FC = () => {
             ))}
         </main>
 
-        {/* Runners in the Shadows Ticker Bar (4th Place and below) */}
+        {/* Runners in the Shadows Ticker Bar */}
         {isFirstRevealed && runners.length > 0 && (
           <div
             className="no-scrollbar"
@@ -2109,7 +2249,7 @@ const BigScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Symmetric 3-Column Footer (`1fr auto 1fr`) */}
+        {/* Symmetric 3-Column Footer */}
         <footer
           style={{
             height: 46,
