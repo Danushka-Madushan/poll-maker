@@ -721,11 +721,14 @@ const VoteScreen: React.FC = () => {
                       position: 'relative',
                     }}
                   >
-                    <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', width: '100%', height: 0, paddingBottom: '100%', overflow: 'hidden', background: 'var(--void)' }}>
                       <img
                         src={opt.imageUrl}
                         alt={opt.title}
                         style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
                           width: '100%',
                           height: '100%',
                           objectFit: 'cover',
@@ -876,8 +879,8 @@ const VoteScreen: React.FC = () => {
               {maxVotes > 1
                 ? `${remaining} VOTE${remaining !== 1 ? 'S' : ''} LEFT`
                 : selected.length === 1
-                ? '1 PICKED'
-                : '1 VOTE LEFT'}
+                  ? '1 PICKED'
+                  : '1 VOTE LEFT'}
             </span>
             {poll && (
               <span className="chip chip-live">
