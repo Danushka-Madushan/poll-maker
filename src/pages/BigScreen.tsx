@@ -1299,7 +1299,7 @@ const BigScreen: React.FC = () => {
 
   /* ---- REVEALED STATE (ARCHITECTURAL BRUTALIST CRYPT PODIUM) ---- */
   if (poll.status === 'revealed' && result) {
-    if (result.totalVotes === 0) {
+    if ((result.totalPoints ?? result.totalVotes) === 0) {
       return (
         <div
           className="display-screen"
@@ -2332,7 +2332,11 @@ const BigScreen: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifySelf: 'start' }}>
             <span style={{ width: 8, height: 8, background: 'var(--pumpkin)', display: 'inline-block' }} />
-            <span>{result.totalVotes} TOTAL VOTES CAST</span>
+            <span>
+              {poll.settings.enableSpecialVotes
+                ? `${result.totalPoints ?? result.totalVotes} TOTAL POINTS`
+                : `${result.totalVotes} TOTAL VOTES CAST`}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ash)', justifySelf: 'center' }}>
             <GeometricSkullSVG size={15} color="var(--ash)" />

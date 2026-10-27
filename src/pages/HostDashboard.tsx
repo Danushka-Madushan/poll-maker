@@ -118,6 +118,25 @@ const HostDashboard: React.FC = () => {
     }
   };
 
+  const handleResetSpecialVotes = () => {
+    if (!pollId || !poll) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'RESET ALL JURY BALLOTS?',
+      message: 'This will reset all physical Jury votes to 0. This cannot be undone.',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        setPoll((prev) => (prev ? { ...prev, specialVotes: {} } : null));
+        try {
+          await updateSpecialVotes(pollId, hostToken, {});
+          addToast({ message: 'All Jury ballots reset to zero.' });
+        } catch (err) {
+          addToast({ message: `Failed to reset: ${(err as Error).message}` });
+        }
+      },
+    });
+  };
+
   const changeStatus = async (status: Poll['status']) => {
     if (!pollId) return;
     const token = hostToken || poll?.hostToken || '';
@@ -300,10 +319,10 @@ const HostDashboard: React.FC = () => {
           </div>
 
           {/* Activity strip */}
-          {(poll.status === 'live' || poll.status === 'closed') && joinCount > 0 && (
+          {(poll.status === 'live' || poll.status === 'closed' || poll.status === 'special_voting') && joinCount > 0 && (
             <div style={{ borderTop: '2px solid var(--ash)', paddingTop: 12 }}>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: '0 0 8px', textTransform: 'uppercase' }}>
-                Votes in: {voteCount} / {joinCount} joined {poll.status === 'closed' ? '(FINAL TALLY)' : ''}
+                Votes in: {voteCount} / {joinCount} joined {(poll.status === 'closed' || poll.status === 'special_voting') ? '(FINAL TALLY)' : ''}
               </p>
               <div className="progress-track">
                 <div className="progress-fill" style={{ width: joinCount > 0 ? `${(voteCount / joinCount) * 100}%` : '0%' }} />
@@ -393,11 +412,21 @@ const HostDashboard: React.FC = () => {
                       Audience votes: 1 pt each · Jury votes: 5 pts each. Enter physical ballots below.
                     </p>
                   </div>
-                  <div style={{ background: 'var(--void)', border: '2px solid var(--toxic)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="blink-dot" style={{ background: 'var(--toxic)' }} />
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--toxic)', fontWeight: 700 }}>
-                      AUDIENCE SEES: "SPECIAL VOTES COUNTING"
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ background: 'var(--void)', border: '2px solid var(--toxic)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="blink-dot" style={{ background: 'var(--toxic)' }} />
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--toxic)', fontWeight: 700 }}>
+                        AUDIENCE SEES: "SPECIAL VOTES COUNTING"
+                      </span>
+                    </div>
+                    <button
+                      className="btn-ghost"
+                      onClick={handleResetSpecialVotes}
+                      style={{ fontSize: 11, padding: '4px 8px', border: '1px solid var(--blood)', color: 'var(--blood)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      title="Reset all entered jury votes to 0"
+                    >
+                      <RotateCcw size={12} /> RESET JURY BALLOTS
+                    </button>
                   </div>
                 </div>
 
@@ -520,7 +549,7 @@ const HostDashboard: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
                 {options.map((opt) => {
                   const tally = result?.tallies.find((t) => t.optionId === opt.id);
-                  const showCounts = poll.settings.showLiveCountsHost && (poll.status === 'live' || poll.status === 'closed');
+                  const showCounts = poll.settings.showLiveCountsHost && (poll.status === 'live' || poll.status === 'closed' || poll.status === 'special_voting');
                   return (
                     <OptionCard
                       key={opt.id}
@@ -821,7 +850,7 @@ const HostDashboard: React.FC = () => {
                     </button>
                   </>
                 )}
-                {result?.totalVotes === 0 && (
+                {(result?.totalPoints ?? result?.totalVotes ?? 0) === 0 && (
                   <button
                     className="btn-secondary"
                     onClick={() => changeStatus('live')}
