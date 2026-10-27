@@ -24,6 +24,8 @@ const JoinPage: React.FC = () => {
       navigate(`/vote/${p.id}`);
     } else if (p.status === 'revealed') {
       navigate(`/results/${p.id}`);
+    } else if (p.status === 'special_voting') {
+      navigate(`/vote/${p.id}`);
     } else {
       // Closed
       navigate(`/vote/${p.id}?closed=1`);

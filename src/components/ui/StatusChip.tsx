@@ -6,11 +6,12 @@ interface StatusChipProps {
 }
 
 const STATUS_CONFIG: Record<PollStatus, { label: string; cls: string; blink?: boolean }> = {
-  draft:    { label: 'DRAFT',    cls: 'chip chip-closed' },
-  lobby:    { label: 'LOBBY',    cls: 'chip chip-lobby' },
-  live:     { label: 'LIVE',     cls: 'chip chip-live',   blink: true },
-  closed:   { label: 'CLOSED',   cls: 'chip chip-closed' },
-  revealed: { label: 'REVEALED', cls: 'chip chip-revealed' },
+  draft:          { label: 'DRAFT',          cls: 'chip chip-closed' },
+  lobby:          { label: 'LOBBY',          cls: 'chip chip-lobby' },
+  live:           { label: 'LIVE',           cls: 'chip chip-live',     blink: true },
+  closed:         { label: 'CLOSED',         cls: 'chip chip-closed' },
+  special_voting: { label: 'SPECIAL VOTING', cls: 'chip chip-special',  blink: true },
+  revealed:       { label: 'REVEALED',       cls: 'chip chip-revealed' },
 };
 
 const StatusChip: React.FC<StatusChipProps> = ({ status }) => {

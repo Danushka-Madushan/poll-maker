@@ -1,5 +1,5 @@
-/** Poll status lifecycle: draft → lobby → live → closed → revealed */
-export type PollStatus = 'draft' | 'lobby' | 'live' | 'closed' | 'revealed';
+/** Poll status lifecycle: draft → lobby → live → closed / special_voting → revealed */
+export type PollStatus = 'draft' | 'lobby' | 'live' | 'closed' | 'special_voting' | 'revealed';
 
 export type TieRule = 'co-winners' | 'host-picks' | 'sudden-death';
 
@@ -11,6 +11,8 @@ export interface PollSettings {
   requireNickname: boolean;         // default: false
   shuffleOptions: boolean;          // default: true
   tieRule: TieRule;                 // default: 'co-winners'
+  enableSpecialVotes?: boolean;     // default: false (Jury Ballot phase)
+  specialVoteWeight?: number;       // default: 5 (5 pts per Jury vote)
 }
 
 export interface PollOption {
@@ -37,6 +39,7 @@ export interface Poll {
   revealedAt?: number;
   expiresAt: number;       // 24h after createdAt
   decidedWinnerId?: string; // Set by host to resolve a tie
+  specialVotes?: Record<string, number>; // optionId -> physical Jury vote count
 }
 
 export interface Participant {
@@ -58,16 +61,23 @@ export interface Vote {
 
 export interface VoteTally {
   optionId: string;
-  count: number;
-  percentage: number;
+  count: number;          // Total points/score (or votes if special votes disabled)
+  percentage: number;     // % of total score
+  userVotes: number;      // raw audience votes (1 pt each)
+  specialVotes: number;   // raw physical Jury votes (5 pts each)
+  userPoints: number;     // userVotes * 1
+  specialPoints: number;  // specialVotes * weight
+  totalScore: number;     // userPoints + specialPoints
 }
 
 export interface PollResult {
   pollId: string;
-  totalVotes: number;
+  totalVotes: number;          // total audience votes
+  totalSpecialVotes?: number;  // total physical Jury votes
+  totalPoints?: number;        // total score pool
   totalParticipants: number;
   turnoutPercentage: number;
-  tallies: VoteTally[];    // sorted descending by count
+  tallies: VoteTally[];    // sorted descending by totalScore/count
   isTie: boolean;
   isTieResolved?: boolean;
   decidedWinnerId?: string;
@@ -97,4 +107,6 @@ export const DEFAULT_SETTINGS: PollSettings = {
   requireNickname: false,
   shuffleOptions: true,
   tieRule: 'co-winners',
+  enableSpecialVotes: false,
+  specialVoteWeight: 5,
 };

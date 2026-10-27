@@ -270,9 +270,9 @@ export async function updatePollStatus(
   status: PollStatus
 ): Promise<void> {
   const updates: Record<string, unknown> = { status };
-  if (status === 'live')     updates.startedAt  = Date.now();
-  if (status === 'closed')   updates.closedAt   = Date.now();
-  if (status === 'revealed') updates.revealedAt = Date.now();
+  if (status === 'live')                                 updates.startedAt  = Date.now();
+  if (status === 'closed' || status === 'special_voting') updates.closedAt   = Date.now();
+  if (status === 'revealed')                             updates.revealedAt = Date.now();
 
   // Update local cache and dispatch locally
   const local = getLocalPoll(pollId);
@@ -746,12 +746,15 @@ export async function getMyVote(
 /*  RESULTS COMPUTATION                                               */
 /* ------------------------------------------------------------------ */
 
-/** Computes poll results from a votes array and options array. */
+/** Computes poll results from votes, options, and optional manual Jury votes. */
 export function computeResults(
   votes: Vote[],
   options: PollOption[],
   participantCount: number,
-  decidedWinnerId?: string
+  decidedWinnerId?: string,
+  specialVotes?: Record<string, number>,
+  specialVoteWeight: number = 5,
+  enableSpecialVotes: boolean = false
 ): PollResult {
   const counts = new Map<string, number>();
   for (const opt of options) counts.set(opt.id, 0);
@@ -761,21 +764,43 @@ export function computeResults(
     }
   }
 
-  const totalVotes = votes.length;
+  const totalUserVotes = votes.length;
+  let totalSpecialVotes = 0;
+  let grandTotalPoints = 0;
 
-  const tallies: VoteTally[] = options
-    .map((opt) => ({
-      optionId:   opt.id,
-      count:      counts.get(opt.id) ?? 0,
-      percentage: totalVotes > 0
-        ? Math.round(((counts.get(opt.id) ?? 0) / totalVotes) * 100)
+  const rawTallies = options.map((opt) => {
+    const userVotes = counts.get(opt.id) ?? 0;
+    const juryVotes = enableSpecialVotes ? (specialVotes?.[opt.id] ?? 0) : 0;
+    totalSpecialVotes += juryVotes;
+
+    const userPoints = userVotes * 1;
+    const specialPoints = juryVotes * (specialVoteWeight || 5);
+    const totalScore = enableSpecialVotes ? (userPoints + specialPoints) : userVotes;
+    grandTotalPoints += totalScore;
+
+    return {
+      optionId: opt.id,
+      userVotes,
+      specialVotes: juryVotes,
+      userPoints,
+      specialPoints,
+      totalScore,
+      count: totalScore,
+    };
+  });
+
+  const tallies: VoteTally[] = rawTallies
+    .map((t) => ({
+      ...t,
+      percentage: grandTotalPoints > 0
+        ? Math.round((t.totalScore / grandTotalPoints) * 100)
         : 0,
     }))
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => b.totalScore - a.totalScore);
 
-  const maxCount = tallies[0]?.count ?? 0;
+  const maxScore = tallies[0]?.totalScore ?? 0;
   const rawWinners = tallies
-    .filter((t) => t.count === maxCount && maxCount > 0)
+    .filter((t) => t.totalScore === maxScore && maxScore > 0)
     .map((t) => t.optionId);
 
   const hasTie = rawWinners.length > 1;
@@ -784,17 +809,39 @@ export function computeResults(
 
   return {
     pollId: options[0]?.pollId ?? '',
-    totalVotes,
-    totalParticipants: Math.max(participantCount, totalVotes),
+    totalVotes: totalUserVotes,
+    totalSpecialVotes,
+    totalPoints: grandTotalPoints,
+    totalParticipants: Math.max(participantCount, totalUserVotes),
     turnoutPercentage: participantCount > 0
-      ? Math.min(100, Math.round((totalVotes / participantCount) * 100))
-      : (totalVotes > 0 ? 100 : 0),
+      ? Math.min(100, Math.round((totalUserVotes / participantCount) * 100))
+      : (totalUserVotes > 0 ? 100 : 0),
     tallies,
     isTie: hasTie && !resolved,
     isTieResolved: resolved,
     decidedWinnerId: resolved ? decidedWinnerId : undefined,
     winners,
   };
+}
+
+/** Updates manual physical Jury votes for options */
+export async function updateSpecialVotes(
+  pollId: string,
+  _hostToken: string,
+  specialVotes: Record<string, number>
+): Promise<void> {
+  void _hostToken;
+  const local = getLocalPoll(pollId);
+  if (local) {
+    const updated = { ...local, specialVotes };
+    saveLocalPoll(updated);
+  }
+  try {
+    const pollRef = doc(db, 'polls', pollId);
+    await updateDoc(pollRef, { specialVotes });
+  } catch (err) {
+    console.debug('Firestore updateSpecialVotes notice:', err);
+  }
 }
 
 /** Resolves a tie by allowing host to designate a single winner */
@@ -825,8 +872,11 @@ export function exportResultsCSV(
   poll: Poll,
   result: PollResult
 ): void {
+  const isSpecial = Boolean(poll.settings.enableSpecialVotes);
+  const metricLabel = isSpecial ? 'Points' : 'Votes';
+
   const rows = [
-    ['Option', 'Label', 'Votes', 'Percentage'],
+    ['Option', 'Label', metricLabel, 'Percentage'],
     ...result.tallies.map((t) => {
       const opt = poll.options.find((o) => o.id === t.optionId);
       return [
@@ -837,7 +887,7 @@ export function exportResultsCSV(
       ];
     }),
     [],
-    ['Total Votes', String(result.totalVotes)],
+    [isSpecial ? 'Total Points' : 'Total Votes', String(isSpecial ? (result.totalPoints || result.totalVotes) : result.totalVotes)],
     ['Participants', String(result.totalParticipants)],
     ['Turnout', `${result.turnoutPercentage}%`],
   ];

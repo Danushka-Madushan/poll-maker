@@ -255,8 +255,16 @@ const BigScreen: React.FC = () => {
   // Compute results
   const result = useMemo(() => {
     if (options.length === 0) return null;
-    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
-  }, [votes, options, participants.length, poll?.decidedWinnerId]);
+    return computeResults(
+      votes,
+      options,
+      participants.length,
+      poll?.decidedWinnerId,
+      poll?.specialVotes,
+      poll?.settings.specialVoteWeight ?? 5,
+      poll?.settings.enableSpecialVotes ?? false
+    );
+  }, [votes, options, participants.length, poll?.decidedWinnerId, poll?.specialVotes, poll?.settings.specialVoteWeight, poll?.settings.enableSpecialVotes]);
 
   // Real-time Subscriptions
   useEffect(() => {
@@ -273,11 +281,11 @@ const BigScreen: React.FC = () => {
               accent: 'var(--toxic)',
             });
             setTimeout(() => setTransitionOverlay(null), 1800);
-          } else if (prevStatus.current === 'live' && p.status === 'closed') {
+          } else if (prevStatus.current === 'live' && (p.status === 'closed' || p.status === 'special_voting')) {
             setTransitionOverlay({
-              title: 'VOTING CONCLUDED',
-              subtitle: 'THE DEAD ARE COUNTING BALLOTS…',
-              accent: 'var(--blood)',
+              title: p.status === 'special_voting' ? 'SPECIAL VOTES IN PROGRESS' : 'VOTING CONCLUDED',
+              subtitle: p.status === 'special_voting' ? 'THE JURY IS CASTING THEIR BALLOTS…' : 'THE DEAD ARE COUNTING BALLOTS…',
+              accent: p.status === 'special_voting' ? 'var(--witch)' : 'var(--blood)',
             });
             setTimeout(() => setTransitionOverlay(null), 1800);
           }
@@ -1236,6 +1244,59 @@ const BigScreen: React.FC = () => {
     );
   }
 
+  /* ---- SPECIAL VOTING STATE (TV / PROJECTOR) ---- */
+  if (poll.status === 'special_voting') {
+    return (
+      <div
+        className="display-screen"
+        style={{ alignItems: 'center', justifyContent: 'center', gap: 24, position: 'relative' }}
+      >
+        {halftoneBackdrop}
+        {floatingControls}
+        {transitionBanner}
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, width: '100%', maxWidth: 960 }}>
+          <div className="hazard-stripes" style={{ height: 18, width: '100%', marginBottom: 48 }} />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 24 }}>
+            <GeometricSkullSVG size={54} color="var(--witch)" />
+          </div>
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(44px, 6vw, 96px)',
+              color: 'var(--bone)',
+              lineHeight: 0.9,
+              margin: 0,
+            }}
+          >
+            SPECIAL VOTES COUNTING.
+          </h1>
+          <h2
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(28px, 4vw, 56px)',
+              color: 'var(--witch)',
+              marginTop: 24,
+            }}
+          >
+            THE JURY IS CASTING THEIR BALLOTS.
+          </h2>
+          <p
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'clamp(14px, 2vw, 20px)',
+              color: 'var(--ash)',
+              marginTop: 16,
+              letterSpacing: '0.08em',
+            }}
+          >
+            RESULTS WILL BE REVEALED ON SCREEN SHORTLY
+          </p>
+          <div className="hazard-stripes" style={{ height: 18, width: '100%', marginTop: 48 }} />
+        </div>
+      </div>
+    );
+  }
+
   /* ---- REVEALED STATE (ARCHITECTURAL BRUTALIST CRYPT PODIUM) ---- */
   if (poll.status === 'revealed' && result) {
     if (result.totalVotes === 0) {
@@ -1732,7 +1793,7 @@ const BigScreen: React.FC = () => {
                         fontWeight: 900,
                       }}
                     >
-                      {tally2.count} VOTES ({tally2.percentage}%)
+                      {tally2.count} {poll.settings.enableSpecialVotes ? 'PTS' : 'VOTES'} ({tally2.percentage}%)
                     </span>
                   </div>
                 </div>
@@ -1959,7 +2020,7 @@ const BigScreen: React.FC = () => {
                       fontWeight: 900,
                     }}
                   >
-                    {tally1.count} VOTES ({tally1.percentage}%)
+                    {tally1.count} {poll.settings.enableSpecialVotes ? 'PTS' : 'VOTES'} ({tally1.percentage}%)
                   </span>
                 </div>
               </div>
@@ -2163,7 +2224,7 @@ const BigScreen: React.FC = () => {
                         fontWeight: 900,
                       }}
                     >
-                      {tally3.count} VOTES ({tally3.percentage}%)
+                      {tally3.count} {poll.settings.enableSpecialVotes ? 'PTS' : 'VOTES'} ({tally3.percentage}%)
                     </span>
                   </div>
                 </div>
@@ -2241,7 +2302,7 @@ const BigScreen: React.FC = () => {
                   </span>
                   <span style={{ textTransform: 'uppercase', fontWeight: 700 }}>{opt?.title}</span>
                   <span style={{ color: 'var(--toxic)', fontWeight: 700 }}>
-                    {t.count}V ({t.percentage}%)
+                    {t.count}{poll.settings.enableSpecialVotes ? ' PTS' : 'V'} ({t.percentage}%)
                   </span>
                 </div>
               );

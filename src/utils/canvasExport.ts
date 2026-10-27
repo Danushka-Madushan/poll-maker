@@ -110,7 +110,8 @@ export async function exportResultPNG(poll: Poll, result: PollResult): Promise<v
 
   ctx.fillStyle = '#FF6B00';
   ctx.font = '700 16px "Space Mono", monospace';
-  ctx.fillText(`${winnerTally?.count ?? 0} VOTES (${winnerTally?.percentage ?? 0}%)`, imgBoxX + 12, imgBoxY + imgBoxSize - 14);
+  const metric = poll.settings?.enableSpecialVotes ? 'POINTS' : 'VOTES';
+  ctx.fillText(`${winnerTally?.count ?? 0} ${metric} (${winnerTally?.percentage ?? 0}%)`, imgBoxX + 12, imgBoxY + imgBoxSize - 14);
 
   // 7. Right Side: Ranked Bars
   const rightX = 420;
@@ -149,7 +150,7 @@ export async function exportResultPNG(poll: Poll, result: PollResult): Promise<v
     // Count / Pct inside right
     ctx.fillStyle = '#0D0B10';
     ctx.font = '700 14px "Space Mono", monospace';
-    const statText = `${tally.count} (${tally.percentage}%)`;
+    const statText = `${tally.count}${poll.settings?.enableSpecialVotes ? ' PTS' : ''} (${tally.percentage}%)`;
     ctx.fillText(statText, rightX + barW - 110, y + 28);
   });
 
@@ -164,7 +165,8 @@ export async function exportResultPNG(poll: Poll, result: PollResult): Promise<v
 
   ctx.fillStyle = '#8A8394';
   ctx.font = '700 14px "Space Mono", monospace';
-  ctx.fillText(`TOTAL VOTES: ${result.totalVotes}`, 40, footerY + 26);
+  const totalMetric = poll.settings?.enableSpecialVotes ? `TOTAL POINTS: ${result.totalPoints || result.totalVotes}` : `TOTAL VOTES: ${result.totalVotes}`;
+  ctx.fillText(totalMetric, 40, footerY + 26);
   ctx.fillText(`PARTICIPANTS: ${result.totalParticipants}`, 240, footerY + 26);
   ctx.fillText(`TURNOUT: ${result.turnoutPercentage}%`, 460, footerY + 26);
   ctx.fillText(`DATE: ${new Date().toLocaleDateString()}`, 660, footerY + 26);

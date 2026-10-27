@@ -79,8 +79,16 @@ const ResultsScreen: React.FC = () => {
 
   const result = useMemo(() => {
     if (options.length === 0) return null;
-    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
-  }, [votes, options, participants.length, poll?.decidedWinnerId]);
+    return computeResults(
+      votes,
+      options,
+      participants.length,
+      poll?.decidedWinnerId,
+      poll?.specialVotes,
+      poll?.settings.specialVoteWeight ?? 5,
+      poll?.settings.enableSpecialVotes ?? false
+    );
+  }, [votes, options, participants.length, poll?.decidedWinnerId, poll?.specialVotes, poll?.settings.specialVoteWeight, poll?.settings.enableSpecialVotes]);
 
   // Auto-start reveal sequence once results are loaded
   useEffect(() => {
@@ -718,7 +726,7 @@ const ResultsScreen: React.FC = () => {
                                 fontWeight: 900,
                               }}
                             >
-                              {tally.count} VOTES ({tally.percentage}%)
+                              {tally.count} {poll.settings.enableSpecialVotes ? 'PTS' : 'VOTES'} ({tally.percentage}%)
                             </span>
                           </div>
                         </div>
@@ -762,7 +770,7 @@ const ResultsScreen: React.FC = () => {
                     letterSpacing: '0.08em',
                   }}
                 >
-                  {result.totalVotes} TOTAL VOTES
+                  {poll.settings.enableSpecialVotes ? `${result.totalPoints ?? result.totalVotes} TOTAL POINTS` : `${result.totalVotes} TOTAL VOTES`}
                 </span>
               </div>
 
@@ -876,7 +884,7 @@ const ResultsScreen: React.FC = () => {
                           flexShrink: 0,
                         }}
                       >
-                        {tally.count}V ({tally.percentage}%)
+                        {tally.count}{poll.settings.enableSpecialVotes ? ' PTS' : 'V'} ({tally.percentage}%)
                       </span>
                     </div>
 

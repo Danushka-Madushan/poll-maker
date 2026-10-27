@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -29,6 +29,7 @@ import {
   subscribeToParticipants,
   subscribeToVotes,
   updatePollStatus,
+  updateSpecialVotes,
   purgePoll,
   computeResults,
   exportResultsCSV,
@@ -88,10 +89,36 @@ const HostDashboard: React.FC = () => {
   // Compute results when votes change
   const result = useMemo(() => {
     if (options.length === 0) return null;
-    return computeResults(votes, options, participants.length, poll?.decidedWinnerId);
-  }, [votes, options, participants.length, poll?.decidedWinnerId]);
+    return computeResults(
+      votes,
+      options,
+      participants.length,
+      poll?.decidedWinnerId,
+      poll?.specialVotes,
+      poll?.settings.specialVoteWeight ?? 5,
+      poll?.settings.enableSpecialVotes ?? false
+    );
+  }, [votes, options, participants.length, poll?.decidedWinnerId, poll?.specialVotes, poll?.settings.specialVoteWeight, poll?.settings.enableSpecialVotes]);
 
-  const changeStatus = useCallback(async (status: Poll['status']) => {
+  const handleAdjustSpecialVote = async (optionId: string, delta: number) => {
+    if (!pollId || !poll) return;
+    const currentVotes = { ...(poll.specialVotes || {}) };
+    const current = currentVotes[optionId] || 0;
+    const nextVal = Math.max(0, current + delta);
+    if (nextVal === 0) {
+      delete currentVotes[optionId];
+    } else {
+      currentVotes[optionId] = nextVal;
+    }
+    setPoll((prev) => (prev ? { ...prev, specialVotes: currentVotes } : null));
+    try {
+      await updateSpecialVotes(pollId, hostToken, currentVotes);
+    } catch (err) {
+      addToast({ message: `Failed to update special vote: ${(err as Error).message}` });
+    }
+  };
+
+  const changeStatus = async (status: Poll['status']) => {
     if (!pollId) return;
     const token = hostToken || poll?.hostToken || '';
     // Optimistically update poll state so button and badges change immediately
@@ -102,7 +129,7 @@ const HostDashboard: React.FC = () => {
     } catch (err) {
       addToast({ message: `Failed to update status: ${(err as Error).message}` });
     }
-  }, [pollId, hostToken, poll?.hostToken, addToast]);
+  };
 
   const handlePickWinner = async (optionId: string) => {
     if (!pollId) return;
@@ -321,25 +348,25 @@ const HostDashboard: React.FC = () => {
         <div className="host-options-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Options */}
           <div className="host-options-scroll" style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-            {/* Confidential Host Leader Preview (visible during closed status before Reveal) */}
-            {poll.status === 'closed' && result && (
+            {/* Confidential Host Leader Preview (visible during closed or special_voting before Reveal) */}
+            {(poll.status === 'closed' || poll.status === 'special_voting') && result && (
               <div style={{ marginBottom: 20, border: '3px solid var(--pumpkin)', background: 'var(--ink)', padding: '14px 18px', boxShadow: '6px 6px 0 var(--pumpkin)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <Crown size={24} color="var(--pumpkin)" />
                   <div>
                     <p style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--pumpkin)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      CONFIDENTIAL HOST PREVIEW · RESULTS FROZEN
+                      CONFIDENTIAL HOST PREVIEW · {poll.status === 'special_voting' ? 'JURY VOTES TALLYING' : 'RESULTS FROZEN'}
                     </p>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--bone)', margin: '4px 0 0' }}>
-                      {result.totalVotes === 0 ? (
+                      {result.totalVotes === 0 && (result.totalSpecialVotes ?? 0) === 0 ? (
                         'NO VOTES RECORDED'
                       ) : result.winners.length === 1 ? (
                         <>
-                          LEADER: <strong>{options.find((o) => o.id === result.winners[0])?.label} - {options.find((o) => o.id === result.winners[0])?.title}</strong> ({result.tallies.find((t) => t.optionId === result.winners[0])?.count || 0} votes · {result.tallies.find((t) => t.optionId === result.winners[0])?.percentage || 0}%)
+                          LEADER: <strong>{options.find((o) => o.id === result.winners[0])?.label} - {options.find((o) => o.id === result.winners[0])?.title}</strong> ({result.tallies.find((t) => t.optionId === result.winners[0])?.count || 0} {poll.settings.enableSpecialVotes ? 'pts' : 'votes'} · {result.tallies.find((t) => t.optionId === result.winners[0])?.percentage || 0}%)
                         </>
                       ) : (
                         <>
-                          DEADLOCK TIE: {result.winners.length} CONTESTANTS TIED ({result.tallies[0]?.count || 0} votes each)
+                          DEADLOCK TIE: {result.winners.length} CONTESTANTS TIED ({result.tallies[0]?.count || 0} {poll.settings.enableSpecialVotes ? 'pts' : 'votes'} each)
                         </>
                       )}
                     </p>
@@ -348,6 +375,141 @@ const HostDashboard: React.FC = () => {
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', background: 'var(--void)', padding: '4px 10px', border: '1px solid var(--ash)' }}>
                   HIDDEN FROM AUDIENCE UNTIL YOU REVEAL
                 </span>
+              </div>
+            )}
+
+            {/* Special Votes Entry (Jury Ballot) */}
+            {poll.status === 'special_voting' && (
+              <div style={{ marginBottom: 24, border: '3px solid var(--witch)', background: 'var(--ink)', padding: '16px 20px', boxShadow: '6px 6px 0 var(--witch)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, borderBottom: '2px dashed var(--ash)', paddingBottom: 14, marginBottom: 16 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Crown size={22} color="var(--witch)" />
+                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--bone)', margin: 0, textTransform: 'uppercase' }}>
+                        SPECIAL VOTES: JURY BALLOT
+                      </h2>
+                    </div>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', margin: '4px 0 0' }}>
+                      Audience votes: 1 pt each · Jury votes: 5 pts each. Enter physical ballots below.
+                    </p>
+                  </div>
+                  <div style={{ background: 'var(--void)', border: '2px solid var(--toxic)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="blink-dot" style={{ background: 'var(--toxic)' }} />
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--toxic)', fontWeight: 700 }}>
+                      AUDIENCE SEES: "SPECIAL VOTES COUNTING"
+                    </span>
+                  </div>
+                </div>
+
+                {/* Score Summary Metrics */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
+                  <div style={{ background: 'var(--void)', border: '2px solid var(--bone)', padding: '10px 14px' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: 0 }}>AUDIENCE VOTES</p>
+                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, color: 'var(--bone)', margin: '4px 0 0' }}>
+                      {result?.totalVotes ?? 0} <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--ash)' }}>({result?.totalVotes ?? 0} pts)</span>
+                    </p>
+                  </div>
+                  <div style={{ background: 'var(--void)', border: '2px solid var(--witch)', padding: '10px 14px' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--witch)', margin: 0 }}>JURY VOTES ENTERED</p>
+                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, color: 'var(--witch)', margin: '4px 0 0' }}>
+                      {result?.totalSpecialVotes ?? 0} <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--witch)' }}>({(result?.totalSpecialVotes ?? 0) * 5} pts)</span>
+                    </p>
+                  </div>
+                  <div style={{ background: 'var(--void)', border: '2px solid var(--pumpkin)', padding: '10px 14px' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--pumpkin)', margin: 0 }}>TOTAL POINTS POOL</p>
+                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, color: 'var(--pumpkin)', margin: '4px 0 0' }}>
+                      {result?.totalPoints ?? 0} <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--pumpkin)' }}>PTS</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Contestant Steppers */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {options.map((opt) => {
+                    const tally = result?.tallies.find((t) => t.optionId === opt.id);
+                    const currentJuryVotes = poll.specialVotes?.[opt.id] ?? 0;
+                    const audVotes = tally?.userVotes ?? 0;
+                    const totalScore = tally?.totalScore ?? 0;
+
+                    return (
+                      <div
+                        key={opt.id}
+                        style={{
+                          background: 'var(--void)',
+                          border: '2px solid var(--bone)',
+                          padding: '10px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: 12,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 200, flex: 1 }}>
+                          <span style={{ background: 'var(--bone)', color: 'var(--void)', fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 900, padding: '3px 8px' }}>
+                            {opt.label}
+                          </span>
+                          {opt.imageUrl && (
+                            <img src={opt.imageUrl} alt={opt.title} style={{ width: 40, height: 40, objectFit: 'cover', border: '2px solid var(--bone)', flexShrink: 0 }} />
+                          )}
+                          <div style={{ minWidth: 0 }}>
+                            <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--bone)', margin: 0, textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {opt.title}
+                            </h4>
+                            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', margin: '2px 0 0' }}>
+                              Audience: {audVotes} votes ({audVotes} pts)
+                            </p>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--witch)', background: 'var(--ink)' }}>
+                            <button
+                              className="btn-micro"
+                              onClick={() => handleAdjustSpecialVote(opt.id, -1)}
+                              disabled={currentJuryVotes <= 0}
+                              style={{ width: 34, height: 34, fontSize: 18, border: 'none', background: 'transparent', color: 'var(--bone)', cursor: 'pointer' }}
+                              title="Subtract 1 Jury vote"
+                            >
+                              -
+                            </button>
+                            <div style={{ padding: '0 10px', minWidth: 44, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 900, color: 'var(--witch)' }}>
+                              {currentJuryVotes}
+                            </div>
+                            <button
+                              className="btn-micro"
+                              onClick={() => handleAdjustSpecialVote(opt.id, 1)}
+                              style={{ width: 34, height: 34, fontSize: 18, border: 'none', background: 'transparent', color: 'var(--bone)', cursor: 'pointer' }}
+                              title="Add 1 Jury vote (5 pts)"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <button
+                            className="btn-ghost"
+                            onClick={() => handleAdjustSpecialVote(opt.id, 1)}
+                            style={{ fontSize: 11, padding: '4px 8px', border: '1px solid var(--witch)', color: 'var(--witch)' }}
+                          >
+                            +1 JURY (5 PTS)
+                          </button>
+                          <button
+                            className="btn-ghost"
+                            onClick={() => handleAdjustSpecialVote(opt.id, 5)}
+                            style={{ fontSize: 11, padding: '4px 8px', border: '1px solid var(--witch)', color: 'var(--witch)' }}
+                          >
+                            +5 (25 PTS)
+                          </button>
+
+                          <div style={{ background: 'var(--pumpkin)', color: 'var(--void)', padding: '4px 10px', minWidth: 80, textAlign: 'center' }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, display: 'block', fontWeight: 900 }}>TOTAL</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, display: 'block', fontWeight: 900 }}>{totalScore} PTS</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -372,8 +534,8 @@ const HostDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Tie resolution controls (when poll is closed or revealed) */}
-            {(poll.status === 'closed' || poll.status === 'revealed') && result && result.totalVotes > 0 && (
+            {/* Tie resolution controls (when poll is closed, special_voting, or revealed) */}
+            {(poll.status === 'closed' || poll.status === 'special_voting' || poll.status === 'revealed') && result && ((result.totalPoints ?? result.totalVotes) > 0) && (
               <>
                 {result.isTie && (
                   <div style={{ marginTop: 24, border: '3px solid var(--pumpkin)', background: 'var(--ink)', padding: 18, boxShadow: '6px 6px 0 var(--pumpkin)' }}>
@@ -427,21 +589,125 @@ const HostDashboard: React.FC = () => {
 
             {/* Results summary if revealed */}
             {poll.status === 'revealed' && result && (
-              <div style={{ marginTop: 32, borderTop: '3px solid var(--pumpkin)', paddingTop: 16 }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--pumpkin)', marginBottom: 16 }}>RESULTS</h2>
-                {result.tallies.map((tally) => {
-                  const opt = options.find((o) => o.id === tally.optionId);
-                  const isWinner = result.winners.includes(tally.optionId);
-                  return (
-                    <div key={tally.optionId} className="result-bar">
-                      <div className={`result-bar-fill ${isWinner ? '' : 'secondary'}`} style={{ width: `${tally.percentage}%`, background: isWinner ? 'var(--pumpkin)' : 'var(--bone)' }} />
-                      <span className="result-bar-label">{isWinner && '★ '}{opt?.label} - {opt?.title}</span>
-                      <span className="result-bar-pct">{tally.count} ({tally.percentage}%)</span>
-                    </div>
-                  );
-                })}
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', marginTop: 12 }}>
-                  Total: {result.totalVotes} votes · {result.totalParticipants} participants · {result.turnoutPercentage}% turnout
+              <div style={{ marginTop: 32, borderTop: '3px solid var(--pumpkin)', paddingTop: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--pumpkin)', margin: 0, letterSpacing: '0.04em' }}>
+                    FINAL RESULTS
+                  </h2>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', letterSpacing: '0.06em' }}>
+                    {poll.settings.enableSpecialVotes ? `${result.totalPoints ?? result.totalVotes} TOTAL POINTS` : `${result.totalVotes} VOTES`} · {result.turnoutPercentage}% TURNOUT
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {result.tallies.map((tally, idx) => {
+                    const opt = options.find((o) => o.id === tally.optionId);
+                    const isWinner = result.winners.includes(tally.optionId);
+                    const accentColor = isWinner ? 'var(--pumpkin)' : 'var(--bone)';
+
+                    return (
+                      <div
+                        key={tally.optionId}
+                        style={{
+                          background: 'var(--void)',
+                          border: `2px solid ${accentColor}`,
+                          boxShadow: `3px 3px 0 ${isWinner ? 'var(--pumpkin)' : 'var(--ash)'}`,
+                          padding: '10px 14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                            <span
+                              style={{
+                                background: isWinner ? 'var(--pumpkin)' : 'var(--void)',
+                                color: isWinner ? 'var(--void)' : 'var(--bone)',
+                                border: `2px solid ${accentColor}`,
+                                padding: '2px 6px',
+                                minWidth: 32,
+                                textAlign: 'center',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: 12,
+                                fontWeight: 900,
+                                flexShrink: 0,
+                              }}
+                            >
+                              #{idx + 1}
+                            </span>
+                            {opt?.imageUrl && (
+                              <img
+                                src={opt.imageUrl}
+                                alt={opt.title}
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  objectFit: 'cover',
+                                  border: `2px solid ${accentColor}`,
+                                  flexShrink: 0,
+                                }}
+                              />
+                            )}
+                            <div style={{ minWidth: 0 }}>
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-display)',
+                                  fontSize: 15,
+                                  color: 'var(--bone)',
+                                  textTransform: 'uppercase',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  display: 'block',
+                                }}
+                              >
+                                {isWinner && '★ '}{opt?.label} - {opt?.title}
+                              </span>
+                              {poll.settings.enableSpecialVotes && (
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ash)', display: 'block' }}>
+                                  Host view: {tally.userVotes} audience · {tally.specialVotes} jury ({tally.specialPoints} pts)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: 13,
+                              color: accentColor,
+                              fontWeight: 900,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {tally.count} {poll.settings.enableSpecialVotes ? 'PTS' : ''} ({tally.percentage}%)
+                          </span>
+                        </div>
+
+                        <div
+                          style={{
+                            height: 10,
+                            background: 'var(--ink)',
+                            border: '1px solid var(--bone)',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${tally.percentage}%`,
+                              background: isWinner ? 'var(--pumpkin)' : 'var(--bone)',
+                              transition: 'width 800ms linear',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', marginTop: 14 }}>
+                  Total: {poll.settings.enableSpecialVotes ? `${result.totalPoints ?? result.totalVotes} points` : `${result.totalVotes} votes`} · {result.totalParticipants} participants · {result.turnoutPercentage}% turnout
                 </p>
               </div>
             )}
@@ -469,12 +735,30 @@ const HostDashboard: React.FC = () => {
             )}
             {poll.status === 'live' && (
               <HoldButton
-                label="■ PUSH & HOLD TO END"
-                holdingLabel="STOPPING POLL…"
-                onConfirm={() => changeStatus('closed')}
+                label={poll.settings.enableSpecialVotes ? "■ PUSH & HOLD TO STOP & TALLY JURY VOTES" : "■ PUSH & HOLD TO END"}
+                holdingLabel={poll.settings.enableSpecialVotes ? "ENTERING JURY TALLY…" : "STOPPING POLL…"}
+                onConfirm={() => changeStatus(poll.settings.enableSpecialVotes ? 'special_voting' : 'closed')}
                 className="btn-hold-danger"
                 style={{ fontSize: 16, height: 50, padding: '0 28px' } as React.CSSProperties}
               />
+            )}
+            {poll.status === 'special_voting' && (
+              <>
+                <HoldButton
+                  label="▶ PUSH & HOLD TO REVEAL"
+                  holdingLabel="REVEALING FINAL RESULTS…"
+                  onConfirm={() => changeStatus('revealed')}
+                  className="btn-hold-primary"
+                  style={{ fontSize: 16, height: 50, padding: '0 28px' } as React.CSSProperties}
+                />
+                <button
+                  className="btn-secondary"
+                  onClick={() => changeStatus('live')}
+                  style={{ fontSize: 15, height: 50, padding: '0 20px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
+                  <RotateCcw size={16} /> REOPEN QR VOTING
+                </button>
+              </>
             )}
             {poll.status === 'closed' && (
               <>
@@ -485,6 +769,15 @@ const HostDashboard: React.FC = () => {
                   className="btn-hold-primary"
                   style={{ fontSize: 16, height: 50, padding: '0 28px' } as React.CSSProperties}
                 />
+                {poll.settings.enableSpecialVotes && (
+                  <button
+                    className="btn-ghost"
+                    onClick={() => changeStatus('special_voting')}
+                    style={{ fontSize: 14, height: 50, padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: 8, borderColor: 'var(--witch)', color: 'var(--witch)' }}
+                  >
+                    <Crown size={16} /> ENTER JURY VOTES
+                  </button>
+                )}
                 <button
                   className="btn-secondary"
                   onClick={() => changeStatus('live')}
