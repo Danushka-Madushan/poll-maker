@@ -536,6 +536,26 @@ const PollMaker: React.FC = () => {
                     <option value="sudden-death">Sudden-death revote</option>
                   </select>
                 </div>
+
+                {/* Special Votes (Jury Ballot) */}
+                <div style={{ borderTop: '1px dashed var(--ash)', paddingTop: 14 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={settings.enableSpecialVotes ?? false}
+                      onChange={(e) => setSettings((s) => ({ ...s, enableSpecialVotes: e.target.checked }))}
+                      style={{ width: 18, height: 18, accentColor: 'var(--pumpkin)', cursor: 'pointer', marginTop: 2 }}
+                    />
+                    <div>
+                      <span style={{ fontWeight: 700, color: 'var(--pumpkin)', display: 'block', fontFamily: 'var(--font-body)', fontSize: 15 }}>
+                        ENABLE SPECIAL VOTES (JURY BALLOT)
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ash)', display: 'block', marginTop: 2 }}>
+                        Normal votes count as 1 pt. After voting closes, host enters physical Jury votes (5 pts each) before revealing final results.
+                      </span>
+                    </div>
+                  </label>
+                </div>
               </div>
             )}
           </div>

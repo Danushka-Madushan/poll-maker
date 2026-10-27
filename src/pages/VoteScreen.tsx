@@ -488,6 +488,130 @@ const VoteScreen: React.FC = () => {
     );
   }
 
+  /* ---- SPECIAL VOTING STATE ---- */
+  if (poll?.status === 'special_voting') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          background: 'var(--void)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {halftoneBackdrop}
+        {networkBanner}
+        <div className="hazard-stripes" style={{ height: 10, width: '100%', position: 'relative', zIndex: 2 }} />
+
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          <div
+            style={{
+              border: '4px solid var(--witch)',
+              background: 'var(--ink)',
+              maxWidth: 400,
+              width: '100%',
+              boxShadow: '8px 8px 0 var(--witch)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--witch)',
+                color: 'var(--bone)',
+                padding: '8px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                fontWeight: 900,
+                letterSpacing: '0.12em',
+              }}
+            >
+              <span className="blink-dot" style={{ background: 'var(--bone)' }} />
+              <span>SPECIAL VOTES IN PROGRESS</span>
+            </div>
+            <JaggedTeethEdge color="var(--witch)" height={7} />
+
+            <div style={{ padding: '28px 24px 32px', textAlign: 'center' }}>
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  margin: '0 auto 18px',
+                  background: 'var(--void)',
+                  border: '3px solid var(--witch)',
+                  boxShadow: '4px 4px 0 var(--witch)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CandleIcon size={44} color="var(--witch)" />
+              </div>
+
+              <h1
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 'clamp(24px, 6vw, 32px)',
+                  color: 'var(--bone)',
+                  margin: '0 0 14px',
+                  textTransform: 'uppercase',
+                  lineHeight: 0.95,
+                }}
+              >
+                SPECIAL VOTES COUNTING…
+              </h1>
+
+              <div className="hazard-stripes" style={{ height: 8, width: '100%', margin: '18px 0' }} />
+
+              <p
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 14,
+                  color: 'var(--pumpkin)',
+                  margin: '0 0 10px',
+                  letterSpacing: '0.08em',
+                  fontWeight: 700,
+                }}
+              >
+                THE JURY IS CASTING BALLOTS.
+              </p>
+
+              <p
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  color: 'var(--ash)',
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                Audience voting has concluded. Stand by for the final reveal on the big screen!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="hazard-stripes" style={{ height: 10, width: '100%', position: 'relative', zIndex: 2 }} />
+      </div>
+    );
+  }
+
   /* ---- REVEALED / TRANSITION TO RESULTS ---- */
   if (poll?.status === 'revealed') {
     return (

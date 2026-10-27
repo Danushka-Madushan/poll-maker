@@ -395,9 +395,10 @@ a:hover {
   letter-spacing: 0.1em;
   border: 2px solid currentColor;
 }
-.chip-lobby  { color: var(--witch);  border-color: var(--witch);  }
-.chip-live   { color: var(--toxic);  border-color: var(--toxic);  }
-.chip-closed { color: var(--ash);    border-color: var(--ash);    }
+.chip-lobby    { color: var(--witch);   border-color: var(--witch);   }
+.chip-live     { color: var(--toxic);   border-color: var(--toxic);   }
+.chip-closed   { color: var(--ash);     border-color: var(--ash);     }
+.chip-special  { color: var(--witch);   border-color: var(--witch);   }
 .chip-revealed { color: var(--pumpkin); border-color: var(--pumpkin); }
 
 /* Live blinking indicator (~1Hz) */
