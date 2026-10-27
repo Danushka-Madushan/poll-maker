@@ -17,6 +17,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc, // <-- Add deleteDoc here
   onSnapshot,
   query,
   where,
@@ -300,7 +301,6 @@ export async function purgePoll(pollId: string, _hostToken?: string): Promise<vo
     localStorage.removeItem(`hpoll_parts_${pollId}`);
     localStorage.removeItem(`hpoll_votes_${pollId}`);
 
-    // Remove join code mappings
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -322,22 +322,21 @@ export async function purgePoll(pollId: string, _hostToken?: string): Promise<vo
 
   // 4. Delete permanently from Cloud Firestore
   try {
+    // CRITICAL: Delete the root poll document FIRST so every connected phone's
+    // subscribeToPoll listener fires !snap.exists() -> onDeleted() -> navigate('/')
+    // BEFORE the votes[] subcollection is emptied (preventing a transient Tie/0-vote flash).
+    await deleteDoc(doc(db, 'polls', pollId));
+
     const batch = writeBatch(db);
 
-    // Delete options subcollection
     const optSnap = await getDocs(collection(db, 'polls', pollId, 'options'));
     optSnap.forEach((d) => batch.delete(d.ref));
 
-    // Delete participants subcollection
     const partSnap = await getDocs(collection(db, 'polls', pollId, 'participants'));
     partSnap.forEach((d) => batch.delete(d.ref));
 
-    // Delete votes subcollection
     const voteSnap = await getDocs(collection(db, 'polls', pollId, 'votes'));
     voteSnap.forEach((d) => batch.delete(d.ref));
-
-    // Delete the root poll document
-    batch.delete(doc(db, 'polls', pollId));
 
     await batch.commit();
   } catch (err) {
