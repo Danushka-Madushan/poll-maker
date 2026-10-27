@@ -64,7 +64,15 @@ const ResultsScreen: React.FC = () => {
 
   useEffect(() => {
     if (!pollId) return;
-    const u1 = subscribeToPoll(pollId, setPoll);
+    const u1 = subscribeToPoll(
+      pollId,
+      setPoll,
+      undefined,
+      () => {
+        // Redirect voters back to Home immediately when the poll is purged
+        navigate('/', { replace: true });
+      }
+    );
     const u2 = subscribeToOptions(pollId, setOptions);
     const u3 = subscribeToParticipants(pollId, setParticipants);
     const u4 = subscribeToVotes(pollId, setVotes);
@@ -75,7 +83,7 @@ const ResultsScreen: React.FC = () => {
       u3();
       u4();
     };
-  }, [pollId, deviceToken]);
+  }, [pollId, deviceToken, navigate]);
 
   const result = useMemo(() => {
     if (options.length === 0) return null;
@@ -88,7 +96,15 @@ const ResultsScreen: React.FC = () => {
       poll?.settings.specialVoteWeight ?? 5,
       poll?.settings.enableSpecialVotes ?? false
     );
-  }, [votes, options, participants.length, poll?.decidedWinnerId, poll?.specialVotes, poll?.settings.specialVoteWeight, poll?.settings.enableSpecialVotes]);
+  }, [
+    votes,
+    options,
+    participants.length,
+    poll?.decidedWinnerId,
+    poll?.specialVotes,
+    poll?.settings.specialVoteWeight,
+    poll?.settings.enableSpecialVotes,
+  ]);
 
   // Auto-start reveal sequence once results are loaded
   useEffect(() => {
