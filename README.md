@@ -9,7 +9,7 @@
 [![Deployment](https://img.shields.io/badge/Deploy-Firebase%20Hosting-FF5416?style=flat-square&logo=firebase&logoColor=white)](https://poll-maker-nibm.web.app)
 
 > **A real-time, zero-friction live voting engine built for Halloween costume contests, pumpkin carvings, and party games.**  
-> Built strictly to a high-contrast **Neo-Brutalist Halloween Design System** — zero rounded corners, tactile offset shadows, instant QR join, and dual-screen synchronization.
+> Built strictly to a high-contrast **Neo-Brutalist Halloween Design System** — zero rounded corners, tactile offset shadows, instant QR join, dual-screen synchronization, and an optional weighted Jury Ballot system.
 
 🌐 **Live Production Application:** [vote.danushka.me](https://vote.danushka.me) (or [poll-maker-nibm.web.app](https://poll-maker-nibm.web.app))
 
@@ -22,6 +22,7 @@
 | **Create in under 2 minutes** | In-browser 1:1 image cropping and rotation, drag-and-drop / mobile gallery photo upload, automatic alphabetical contestant tagging (`A`, `B`, `C`...), and a real-time mobile simulator preview. |
 | **Join in under 10 seconds** | Audience members scan a high-density QR code or punch in a 6-character code (e.g., `BOO482`). Zero app downloads, zero account creation, and zero social sign-ins. |
 | **100% Real-time & Dual-Screen** | Host operates a private, confidential cockpit on laptop or phone while projecting a public-safe TV display on big screens or projectors via Firebase Firestore real-time snapshot sync. |
+| **Jury Ballot Weighted Scoring** | Host-activated Special Votes phase allowing physical Jury ballots (5 pts each) to be combined with audience QR votes (1 pt each), while strictly preserving 100% Jury privacy. |
 | **Theatrical Suspense Reveal** | Step-by-step unmasking with a 6-second blackout reveal sequence, Web Audio synthesized victory sound effects, and a 3-tier towering 3D monolith podium. |
 
 ---
@@ -44,8 +45,9 @@ Halloween Poll Maker decouples the **Host Control Room** from the **Audience Big
 ├──────────────────┤           ├──────────────────┤           ├──────────────────┤
 │ • Start/Stop/End │           │ • 10-meter QR    │           │ • 2-Col Card Grid│
 │ • Private Leader │           │ • Live Contenders│           │ • Single Ballot  │
-│ • Tie-Breaker UI │           │ • Suspense Veil  │           │ • Vote Lock-in   │
-│ • Hold Buttons   │           │ • Tower Podium   │           │ • Auto-Reconnect │
+│ • Jury Console   │           │ • Jury Veil      │           │ • Vote Lock-in   │
+│ • Tie-Breaker UI │           │ • Suspense Veil  │           │ • Auto-Reconnect │
+│ • Hold Buttons   │           │ • Tower Podium   │           │ • Jury Suspense  │
 └──────────────────┘           └──────────────────┘           └──────────────────┘
 ```
 
@@ -70,17 +72,28 @@ Halloween Poll Maker decouples the **Host Control Room** from the **Audience Big
 
 ### 3. 🛡️ Private Host Cockpit (`/host/:pollId`)
 - **Safety Hold-to-Confirm**: Destructive transitions (Start Haunt, Freeze Votes, Reveal Winner) require holding the button for 1 second (`HoldButton`), preventing accidental taps in high-energy party settings.
-- **Confidential Preview**: The host sees who is leading while voting is frozen in the `Closed` state, without exposing results on the big screen.
+- **Confidential Preview**: The host sees who is leading while voting is frozen in the `Closed` or `Special Votes` state, without exposing results on the big screen.
 - **Tie-Breaker Control**: When contests result in a dead heat, hosts can either crown a singular champion or preserve co-winners.
 - **Audience Management**: Real-time counter of connected devices with a collapsible audience roll call.
 
-### 4. 📱 Frictionless Voter Client (`/vote/:pollId`)
+### 4. ⚖️ Special Votes (Jury Ballot System)
+- **Host-Configurable**: Toggle in Poll Maker under Step 3 to activate the Jury Ballot ritual.
+- **Weighted Scoring Model**:
+  - **Audience QR Votes**: 1 point each.
+  - **Physical Jury Votes**: 5 points each.
+  - **Total Score**: $(\text{Audience Votes} \times 1) + (\text{Jury Votes} \times 5)$.
+- **Dedicated `special_voting` Phase**: When normal voting concludes, the poll transitions into the Special Votes phase.
+- **100% Jury Privacy**: Big Screen and audience phones display *"SPECIAL VOTES COUNTING… THE JURY IS CASTING THEIR BALLOTS."* without leaking vote origins or contestant numbers. Final results display total points (`X PTS (Y%)`) with zero public breakdown.
+- **Host Jury Console**: Tactile contestant cards with `[ - ]` and `[ + ]` steppers, quick `+1 JURY (5 PTS)` and `+5 (25 PTS)` buttons, points pool metrics, and safety reset modal.
+- **Safety Reopen Valve**: `↺ REOPEN QR VOTING` allows the host to resume audience voting if stopped prematurely without losing any entered jury ballots.
+
+### 5. 📱 Frictionless Voter Client (`/vote/:pollId`)
 - **Anonymous Device Fingerprinting**: Combines browser storage and hardware entropy tokens (`getDeviceToken()`) to enforce **one-vote-per-person** without requiring Google, email, or phone authentication.
 - **Thumb-Friendly 2-Column Grid**: Large tap targets with tactile orange selection borders.
 - **Ballot Lock-In**: Full-screen confirmation modal with haptic feedback to prevent accidental misclicks.
 - **Offline Resilience**: Automatically detects connectivity drops (`navigator.onLine`) and presents an offline reconnection status bar without dropping ballot state.
 
-### 5. 🔊 Pure Synthesized Web Audio Engine
+### 6. 🔊 Pure Synthesized Web Audio Engine
 - **Zero MP3/WAV Dependencies**: All sound effects are procedurally generated in real time using the native browser `AudioContext` and oscillator nodes:
   - 🔘 **Card Tap**: Crisp 800Hz transient click.
   - 🔔 **Lobby Gong**: Heavy 120Hz sub-bass gong resonance.
@@ -88,7 +101,7 @@ Halloween Poll Maker decouples the **Host Control Room** from the **Audience Big
   - 🎺 **Victory Fanfare**: Ascending arpeggio chord progression (`C4` → `E4` → `G4` → `C5`).
 - **Global Mute Cockpit**: Host can instantly mute or unmute audio effects with state preserved in localStorage.
 
-### 6. 📊 Analytics, CSV & Social Export
+### 7. 📊 Analytics, CSV & Social Export
 - **1-Click CSV Export**: Download complete poll tallies, voter turnout percentages, and contestant breakdowns with standardized timestamps.
 - **Social Card Canvas Generator**: Client-side generation of branded 1200x630px result banners for direct sharing on Instagram, Discord, or X.
 
@@ -116,7 +129,7 @@ Strictly adhering to [`Website Design Guide.md`](./Website%20Design%20Guide.md),
 | `--pumpkin` | `#FF6B00` | Primary buttons, selections & Winner | **Always pair with `--void` text** |
 | `--toxic` | `#B6FF2E` | Live haunt status & checkmarks | **Always pair with `--void` text** |
 | `--blood` | `#E0283C` | Destructive actions, reset & stop | Danger foreground |
-| `--witch` | `#7A3BE0` | Lobby state & badge accents | Paired with `--void` text |
+| `--witch` | `#7A3BE0` | Lobby state & Jury Ballot phase | Paired with `--void` text |
 
 ---
 
@@ -125,23 +138,24 @@ Strictly adhering to [`Website Design Guide.md`](./Website%20Design%20Guide.md),
 Every screen automatically transitions based on the active state in Firestore:
 
 ```
-┌─────────┐      Host Starts      ┌─────────┐      Host Closes     ┌──────────┐
-│  LOBBY  │ ────────────────────> │  LIVE   │ ───────────────────> │  CLOSED  │
-└────┬────┘                       └─────────┘                      └────┬─────┘
-     │                                 ▲                                │
-     │                                 │ Host Reopens (Safety Valve)    │ Host Reveals
-     │                                 └────────────────────────────────┤
-     ▼                                                                  ▼
-[ Big Screen: QR Code ]          [ Audience: Vote Cards ]         ┌──────────┐
-[ Audience: "Waiting" ]          [ Big Screen: Contenders]        │ REVEALED │
-                                                                  └──────────┘
-                                                              [ Podium & Winner ]
+┌─────────┐      Host Starts      ┌─────────┐      Host Stops      ┌────────────────┐
+│  LOBBY  │ ────────────────────> │  LIVE   │ ───────────────────> │ SPECIAL VOTES  │
+└────┬────┘                       └─────────┘    (or CLOSED)       │   (or CLOSED)  │
+     │                                 ▲                           └───────┬────────┘
+     │                                 │ Host Reopens (Safety)             │ Host Reveals
+     │                                 └───────────────────────────────────┤
+     ▼                                                                     ▼
+[ Big Screen: QR Code ]          [ Audience: Vote Cards ]            ┌──────────┐
+[ Audience: "Waiting" ]          [ Big Screen: Contenders]           │ REVEALED │
+                                                                     └──────────┘
+                                                                 [ Podium & Winner ]
 ```
 
 | State | Big Screen Display | Audience Mobile | Host Control Actions |
 | :--- | :--- | :--- | :--- |
 | **`lobby`** | Giant QR + 6-Char Code + Live Join Counter | "You're in. Waiting for host…" | `PUSH & HOLD TO START` |
-| **`live`** | Live contestant gallery + Turnout progress bar | Interactive 2-column voting cards | `PUSH & HOLD TO FREEZE VOTES` |
+| **`live`** | Live contestant gallery + Turnout progress bar | Interactive 2-column voting cards | `PUSH & HOLD TO STOP` |
+| **`special_voting`** | "SPECIAL VOTES COUNTING. THE JURY IS CASTING BALLOTS." | "Special votes counting… Awaiting reveal" | `PUSH & HOLD TO REVEAL` or `REOPEN QR VOTING` |
 | **`closed`** | Suspense veil ("RESULTS ARE BEING SEALED") | "Voting closed. Awaiting reveal…" | `REOPEN VOTING` or `REVEAL WINNER` |
 | **`revealed`** | 3-Tier Podium + Confetti + Monoliths | Winner banner + "Your Pick" badge | `REPLAY REVEAL` or `CREATE NEW` |
 
@@ -153,7 +167,7 @@ Every screen automatically transitions based on the active state in Firestore:
 | :--- | :--- | :--- |
 | `/` | [`Home.tsx`](./src/pages/Home.tsx) | Host entry, recent polls cache resume, feature breakdown |
 | `/create` | [`PollMaker.tsx`](./src/pages/PollMaker.tsx) | 2-column builder with real-time phone preview & crop modal |
-| `/host/:pollId` | [`HostDashboard.tsx`](./src/pages/HostDashboard.tsx) | Private host cockpit with safety buttons and leader preview |
+| `/host/:pollId` | [`HostDashboard.tsx`](./src/pages/HostDashboard.tsx) | Private host cockpit with safety buttons, leader preview & Jury console |
 | `/display` | [`BigScreen.tsx`](./src/pages/BigScreen.tsx) | TV quick launcher (enter 6-character poll code) |
 | `/display/:pollId` | [`BigScreen.tsx`](./src/pages/BigScreen.tsx) | Projector/TV view (QR code → Live gallery → Crypt podium) |
 | `/join/:code` | [`JoinPage.tsx`](./src/pages/JoinPage.tsx) | Audience QR bridge; assigns anonymous device fingerprint |
@@ -183,21 +197,21 @@ poll-maker/
 │   │   ├── ImageCropModal.tsx  # Canvas 1:1 image cropper and 90° rotator
 │   │   ├── ImageUploader.tsx   # Mobile-friendly gallery picker with compression
 │   │   ├── OptionCard.tsx      # Tactile voting option card with image & badge
-│   │   ├── StatusChip.tsx      # Blinking status pill (LOBBY, LIVE, CLOSED)
+│   │   ├── StatusChip.tsx      # Blinking status pill (LOBBY, LIVE, CLOSED, SPECIAL)
 │   │   └── Toast.tsx           # Monospace notification snackbar
 │   ├── firebase/
 │   │   ├── config.ts           # Firebase app & Firestore initialization
-│   │   └── pollService.ts      # Real-time subscriptions, transactions & queries
+│   │   └── pollService.ts      # Real-time subscriptions, weighted scoring & queries
 │   ├── pages/
 │   │   ├── Home.tsx            # Landing cockpit & stored device history
 │   │   ├── PollMaker.tsx       # Live contest builder with live preview
-│   │   ├── HostDashboard.tsx   # Private host command center
+│   │   ├── HostDashboard.tsx   # Private host command center with Jury Ballot Console
 │   │   ├── BigScreen.tsx       # TV / Projector public display
 │   │   ├── JoinPage.tsx        # QR code & nickname bridge
 │   │   ├── VoteScreen.tsx      # Mobile voting ballot
 │   │   └── ResultsScreen.tsx   # Final standings & export hub
 │   ├── types/
-│   │   └── poll.ts             # TypeScript definitions for Polls, Options & Votes
+│   │   └── poll.ts             # TypeScript definitions for Polls, Options, Votes & Jury
 │   └── utils/
 │       ├── audio.ts            # Web Audio API procedural synthesizer
 │       ├── canvasExport.ts     # Social share certificate generator
