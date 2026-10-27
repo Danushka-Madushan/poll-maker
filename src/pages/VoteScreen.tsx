@@ -378,7 +378,7 @@ const VoteScreen: React.FC = () => {
   }
 
   /* ---- CLOSED STATE ---- */
-  if (poll?.status === 'closed' || isClosed) {
+  if ((poll?.status === 'closed' || isClosed) && poll?.status !== 'special_voting') {
     return (
       <div
         style={{
