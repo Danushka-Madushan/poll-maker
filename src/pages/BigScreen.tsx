@@ -1257,7 +1257,7 @@ const BigScreen: React.FC = () => {
         <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, width: '100%', maxWidth: 960 }}>
           <div className="hazard-stripes" style={{ height: 18, width: '100%', marginBottom: 48 }} />
           <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 24 }}>
-            <GeometricSkullSVG size={54} color="var(--witch)" />
+            <GeometricCrownSVG size={58} color="var(--witch)" />
           </div>
           <h1
             style={{
