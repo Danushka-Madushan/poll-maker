@@ -328,7 +328,11 @@ const BigScreen: React.FC = () => {
 
     if (revealStep < podiumSteps) {
       if (!isMuted() && revealStep > 0) playTick();
-      const delay = revealStep === 0 ? 1600 : 1200;
+      const delay =
+        revealStep === 0 ? 1600 : // blackout screen — "AND THE WINNER IS…" (unchanged)
+        revealStep === 1 ? 2400 : // suspense before 3rd place is revealed
+        revealStep === 2 ? 2400 : // suspense before 2nd place is revealed
+        3200;                     // suspense before 1st place is revealed
       const t = setTimeout(() => setRevealStep((s) => s + 1), delay);
       return () => clearTimeout(t);
     }
